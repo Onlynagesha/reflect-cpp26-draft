@@ -1,6 +1,9 @@
 #ifndef REFLECT_CPP26_TYPE_TRAITS_TEMPLATE_INSTANCE_HPP
 #define REFLECT_CPP26_TYPE_TRAITS_TEMPLATE_INSTANCE_HPP
 
+// Circular dependency prevention:
+//   This header should not include anything other than C++ std library
+//   since it's included by utils/meta_tuple.hpp.
 #include <type_traits>
 
 namespace reflect_cpp26 {

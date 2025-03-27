@@ -1,9 +1,9 @@
 #ifndef REFLECT_CPP26_UTILS_TO_STRING_HPP
 #define REFLECT_CPP26_UTILS_TO_STRING_HPP
 
+#include <reflect_cpp26/type_traits/arithmetic_types.hpp>
 #include <reflect_cpp26/utils/ctype.h>
 #include <reflect_cpp26/utils/meta_string_view.hpp>
-#include <reflect_cpp26/utils/type_traits.hpp>
 #include <reflect_cpp26/utils/utility.hpp>
 #include <bit>
 #include <charconv>
@@ -20,6 +20,116 @@ constexpr auto byte_to_hex_table_v =
   "c0c1c2c3c4c5c6c7c8c9cacbcccdcecfd0d1d2d3d4d5d6d7d8d9dadbdcdddedf"
   "e0e1e2e3e4e5e6e7e8e9eaebecedeeeff0f1f2f3f4f5f6f7f8f9fafbfcfdfeff";
 
+constexpr auto to_string(char8_t value, bool quoted = false) -> std::string
+{
+  if (isprint(value)) {
+    if (quoted) {
+      auto res = std::string(3zU, '\'');
+      res[1] = value;
+      return res;
+    }
+    return std::string(1zU, static_cast<char>(value));
+  }
+  switch (value) {
+  case '\0':
+    return quoted ? "'\\0'" : "\\0";
+  case '\t':
+    return quoted ? "'\\t'" : "\\t";
+  case '\n':
+    return quoted ? "'\\n'" : "\\n";
+  case '\v':
+    return quoted ? "'\\v'" : "\\v";
+  case '\f':
+    return quoted ? "'\\f'" : "\\f";
+  case '\r':
+    return quoted ? "'\\r'" : "\\r";
+  default:
+    break;
+  }
+  auto res = std::string{quoted ? "'\\x**'" : "\\x**"};
+  auto* out = res.data() + quoted + 2; // 2 : Length of backslash and 'x'
+  constexpr auto n_xdigits_per_byte = 2;
+  std::copy_n(byte_to_hex_table_v + n_xdigits_per_byte * value,
+              n_xdigits_per_byte, out);
+  return res;
+}
+
+template <std::endian Endian>
+constexpr auto to_string(char16_t value, bool quoted = false) -> std::string
+{
+  static_assert(sizeof(char16_t) == 2, "Unsupported char16_t");
+  if (in_range<char8_t>(value)) {
+    return to_string(static_cast<char8_t>(value), quoted);
+  }
+  auto bytes = std::bit_cast<std::array<uint8_t, 2>>(value);
+  auto res = std::string{quoted ? "'\\u****'" : "\\u****"};
+  auto* out = res.data() + quoted + 2; // 2 : Length of backslash and 'u'
+
+  constexpr auto n_xdigits_per_byte = 2;
+  if constexpr (Endian == std::endian::little) {
+    out = std::copy_n(byte_to_hex_table_v + n_xdigits_per_byte * bytes[1],
+                      n_xdigits_per_byte, out);
+    out = std::copy_n(byte_to_hex_table_v + n_xdigits_per_byte * bytes[0],
+                      n_xdigits_per_byte, out);
+  } else {
+    static_assert(Endian == std::endian::big, "Unknown endian");
+    out = std::copy_n(byte_to_hex_table_v + n_xdigits_per_byte * bytes[0],
+                      n_xdigits_per_byte, out);
+    out = std::copy_n(byte_to_hex_table_v + n_xdigits_per_byte * bytes[1],
+                      n_xdigits_per_byte, out);
+  }
+  return res;
+}
+
+template <std::endian Endian>
+constexpr auto to_string(char32_t value, bool quoted = false) -> std::string
+{
+  static_assert(sizeof(char32_t) == 4, "Unsupported char32_t");
+  if (in_range<char16_t>(value)) {
+    return to_string<Endian>(static_cast<char16_t>(value), quoted);
+  }
+  auto bytes = std::bit_cast<std::array<uint8_t, 4>>(value);
+  auto res = std::string{quoted ? "'\\U********'" : "\\U********"};
+  auto* out = res.data() + quoted + 2; // 2 : Length of backslash and 'U'
+
+  constexpr auto n_xdigits_per_byte = 2;
+  if constexpr (Endian == std::endian::little) {
+    out = std::copy_n(byte_to_hex_table_v + n_xdigits_per_byte * bytes[3],
+                      n_xdigits_per_byte, out);
+    out = std::copy_n(byte_to_hex_table_v + n_xdigits_per_byte * bytes[2],
+                      n_xdigits_per_byte, out);
+    out = std::copy_n(byte_to_hex_table_v + n_xdigits_per_byte * bytes[1],
+                      n_xdigits_per_byte, out);
+    out = std::copy_n(byte_to_hex_table_v + n_xdigits_per_byte * bytes[0],
+                      n_xdigits_per_byte, out);
+  } else {
+    static_assert(Endian == std::endian::big, "Unknown endian.");
+    out = std::copy_n(byte_to_hex_table_v + n_xdigits_per_byte * bytes[0],
+                      n_xdigits_per_byte, out);
+    out = std::copy_n(byte_to_hex_table_v + n_xdigits_per_byte * bytes[1],
+                      n_xdigits_per_byte, out);
+    out = std::copy_n(byte_to_hex_table_v + n_xdigits_per_byte * bytes[2],
+                      n_xdigits_per_byte, out);
+    out = std::copy_n(byte_to_hex_table_v + n_xdigits_per_byte * bytes[3],
+                      n_xdigits_per_byte, out);
+  }
+  return res;
+}
+
+template <class CharT>
+constexpr auto char_to_string_dispatch(CharT value, bool quoted) -> std::string
+{
+  if constexpr (sizeof(CharT) == 1) {
+    return to_string(static_cast<char8_t>(value), quoted);
+  } else if constexpr (sizeof(CharT) == 2) {
+    return to_string<std::endian::native>(static_cast<char16_t>(value), quoted);
+  } else if constexpr (sizeof(CharT) == 4) {
+    return to_string<std::endian::native>(static_cast<char32_t>(value), quoted);
+  } else {
+    static_assert(false, "Unknown char type.");
+  }
+}
+
 template <class... Args>
 constexpr bool try_to_chars(std::string* dest, Args... args)
 {
@@ -31,133 +141,34 @@ constexpr bool try_to_chars(std::string* dest, Args... args)
   }
   return false;
 }
-
-template <class... Args>
-constexpr auto try_to_chars(std::span<const size_t> buffer_sizes, Args... args)
-  -> std::string
-{
-  auto res = std::string{};
-  for (auto cur_buffer_size: buffer_sizes) {
-    res.assign(cur_buffer_size, '\0');
-    if (try_to_chars(&res, args...)) {
-      return res;
-    }
-  }
-  REFLECT_CPP26_ERROR_IF_CONSTEVAL(
-    "Internal error: Failure during floating-to-string conversion.");
-  return "<ERROR:internal-error>";
-}
 } // namespace impl
 
+/**
+ * to_string(bool)
+ */
 constexpr auto to_string(bool value) -> std::string {
   return value ? "true" : "false";
 }
 
-constexpr auto to_string(char8_t value, bool quoted = false) -> std::string
-{
-  if (isprint(value)) {
-    if (quoted) {
-      auto res = std::string(3zU, '\'');
-      res[1] = value;
-      return res;
-    }
-    return std::string(1zU, static_cast<char>(value));
-  }
-  auto res = std::string{quoted ? "'\\x**'" : "\\x**"};
-  auto* out = res.data() + quoted + 2; // 2 : Length of backslash and 'x'
-  constexpr auto n_xdigits_per_byte = 2;
-  std::copy_n(impl::byte_to_hex_table_v + n_xdigits_per_byte * value,
-              n_xdigits_per_byte, out);
-  return res;
+/**
+ * to_string(CharT) where CharT is one of character type.
+ */
+template <class CharT>
+  requires (is_char_type_v<CharT>)
+constexpr auto to_string(CharT value, bool quoted = false) -> std::string {
+  return impl::char_to_string_dispatch(value, quoted);
 }
 
-constexpr auto to_string(char value, bool quoted = false) -> std::string {
-  return to_string(static_cast<char8_t>(value), quoted);
-}
-
-constexpr auto to_string(char16_t value, bool quoted = false) -> std::string
-{
-  static_assert(sizeof(char16_t) == 2, "Unsupported char16_t");
-  if (in_range<char8_t>(value)) {
-    return to_string(static_cast<char8_t>(value), quoted);
-  }
-  auto bytes = std::bit_cast<std::array<uint8_t, 2>>(value);
-  auto res = std::string{quoted ? "'\\u****'" : "\\u****"};
-  auto* out = res.data() + quoted + 2; // 2 : Length of backslash and 'u'
-  constexpr auto n_xdigits_per_byte = 2;
-  if constexpr (std::endian::native == std::endian::little) {
-    out = std::copy_n(impl::byte_to_hex_table_v + n_xdigits_per_byte * bytes[1],
-                      n_xdigits_per_byte, out);
-    out = std::copy_n(impl::byte_to_hex_table_v + n_xdigits_per_byte * bytes[0],
-                      n_xdigits_per_byte, out);
-  } else if constexpr (std::endian::native == std::endian::big) {
-    out = std::copy_n(impl::byte_to_hex_table_v + n_xdigits_per_byte * bytes[0],
-                      n_xdigits_per_byte, out);
-    out = std::copy_n(impl::byte_to_hex_table_v + n_xdigits_per_byte * bytes[1],
-                      n_xdigits_per_byte, out);
-  } else {
-    REFLECT_CPP26_ERROR_IF_CONSTEVAL("Internal error: Unknown endian.");
-    return "<ERROR:unknown-endian>";
-  }
-  return res;
-}
-
-constexpr auto to_string(char32_t value, bool quoted = false) -> std::string
-{
-  static_assert(sizeof(char32_t) == 4, "Unsupported char32_t");
-  if (in_range<char16_t>(value)) {
-    return to_string(static_cast<char16_t>(value), quoted);
-  }
-  auto bytes = std::bit_cast<std::array<uint8_t, 4>>(value);
-  auto res = std::string{quoted ? "'\\U********'" : "\\U********"};
-  auto* out = res.data() + quoted + 2; // 2 : Length of backslash and 'U'
-  constexpr auto n_xdigits_per_byte = 2;
-  if constexpr (std::endian::native == std::endian::little) {
-    out = std::copy_n(impl::byte_to_hex_table_v + n_xdigits_per_byte * bytes[3],
-                      n_xdigits_per_byte, out);
-    out = std::copy_n(impl::byte_to_hex_table_v + n_xdigits_per_byte * bytes[2],
-                      n_xdigits_per_byte, out);
-    out = std::copy_n(impl::byte_to_hex_table_v + n_xdigits_per_byte * bytes[1],
-                      n_xdigits_per_byte, out);
-    out = std::copy_n(impl::byte_to_hex_table_v + n_xdigits_per_byte * bytes[0],
-                      n_xdigits_per_byte, out);
-  } else if constexpr (std::endian::native == std::endian::big) {
-    out = std::copy_n(impl::byte_to_hex_table_v + n_xdigits_per_byte * bytes[0],
-                      n_xdigits_per_byte, out);
-    out = std::copy_n(impl::byte_to_hex_table_v + n_xdigits_per_byte * bytes[1],
-                      n_xdigits_per_byte, out);
-    out = std::copy_n(impl::byte_to_hex_table_v + n_xdigits_per_byte * bytes[2],
-                      n_xdigits_per_byte, out);
-    out = std::copy_n(impl::byte_to_hex_table_v + n_xdigits_per_byte * bytes[3],
-                      n_xdigits_per_byte, out);
-  } else {
-    REFLECT_CPP26_ERROR_IF_CONSTEVAL("Internal error: Unknown endian.");
-    return "<ERROR:unknown-endian>";
-  }
-  return res;
-}
-
-constexpr auto to_string(wchar_t value, bool quoted = false) -> std::string
-{
-  if constexpr (sizeof(wchar_t) == 1) {
-    return to_string(static_cast<char8_t>(value), quoted);
-  } else if constexpr (sizeof(wchar_t) == 2) {
-    return to_string(static_cast<char16_t>(value), quoted);
-  } else if constexpr (sizeof(wchar_t) == 4) {
-    return to_string(static_cast<char32_t>(value), quoted);
-  } else {
-    REFLECT_CPP26_ERROR_IF_CONSTEVAL("Internal error: Unknown size of wchar_t");
-    return "<ERROR:unknown-wchar-size>";
-  }
-}
-
+/**
+ * to_string(IntegerT) where IntegerT is one of integer type.
+ */
 template <class IntegerT>
   requires (is_integer_type_v<IntegerT>)
 constexpr auto to_string(IntegerT value, int radix = 10) -> std::string
 {
   if (radix < 2 || radix > 36) {
     REFLECT_CPP26_ERROR_IF_CONSTEVAL("Invalid radix: out of range [2, 36].");
-    return std::format("<ERROR:invalid-radix({})>", radix);
+    return "<ERROR:invalid-radix>";
   }
   // 8 : One byte for minus sign '-' and other 7 bytes for alignment
   constexpr auto buffer_size = CHAR_BIT * sizeof(IntegerT) + 8;
@@ -171,100 +182,22 @@ constexpr auto to_string(IntegerT value, int radix = 10) -> std::string
   return std::string{buffer, ptr};
 }
 
-template <class FloatT>
-  requires (is_same_as_one_of_v<FloatT, float, double>)
-constexpr auto to_string_fixed_format(FloatT value) -> std::string
-{
-  // Note: -FLT_MIN and -FLT_TRUE_MIN require 48 characters ('-' and 47 digits)
-  //       -DBL_TRUE_MIN requires 327 characters ('-' and 326 digits)
-  constexpr auto buffer_size = std::is_same_v<FloatT, float> ? 56zU : 336zU;
-  char buffer[buffer_size];
-  auto [ptr, ec] = std::to_chars(
-    buffer, buffer + buffer_size, value, std::chars_format::fixed);
-  if (std::errc{} == ec) {
-    return std::string{buffer, ptr};
-  }
-  REFLECT_CPP26_ERROR_IF_CONSTEVAL(
-    "Internal error: Failure during float-to-string conversion.");
-  return "<ERROR:internal-error>";
-}
-
-template <class FloatT>
-  requires (std::is_same_v<FloatT, float>)
-constexpr auto to_string_fixed_format(FloatT value, int precision)
-  -> std::string
-{
-  if (precision < 0) {
-    REFLECT_CPP26_ERROR_IF_CONSTEVAL("Invalid precision: non-negative only.");
-    return std::format("<ERROR:invalid-precision({})>", precision);
-  }
-  // Note: -FLT_MIN and -FLT_TRUE_MIN require 48 characters ('-' and 47 digits)
-  constexpr auto integral_part_buffer_size = 56zU;
-  auto res = std::string(integral_part_buffer_size + precision, '\0');
-  if (impl::try_to_chars(&res, value, std::chars_format::fixed, precision)) {
-    return res;
-  }
-  REFLECT_CPP26_ERROR_IF_CONSTEVAL(
-    "Internal error: Failure during float-to-string conversion.");
-  return "<ERROR:internal-error>";
-}
-
-template <class FloatT>
-  requires (std::is_same_v<FloatT, double>)
-constexpr auto to_string_fixed_format(FloatT value, int precision)
-  -> std::string
-{
-  if (precision < 0) {
-    REFLECT_CPP26_ERROR_IF_CONSTEVAL("Invalid precision: non-negative only.");
-    return std::format("<ERROR:invalid-precision({})>", precision);
-  }
-  // Note: -DBL_TRUE_MIN requires 327 characters ('-' and 326 digits)
-  auto buffer_sizes = std::array{56zU + precision,  336zU + precision};
-  return impl::try_to_chars(
-    buffer_sizes, value, std::chars_format::fixed, precision);
-}
-
-constexpr auto to_string_fixed_format(long double value) -> std::string
-{
-  // Note: -LDBL_TRUE_MIN requires 4954 characters ('-' and 4953 digits)
-  constexpr auto buffer_sizes = std::array{56zU, 336zU, 1280zU, 4960zU};
-  return impl::try_to_chars(buffer_sizes, value, std::chars_format::fixed);
-}
-
-template <class FloatT>
-  requires (std::is_same_v<FloatT, long double>)
-constexpr auto to_string_fixed_format(FloatT value, int precision)
-  -> std::string
-{
-  if (precision < 0) {
-    REFLECT_CPP26_ERROR_IF_CONSTEVAL("Invalid precision: non-negative only.");
-    return std::format("<ERROR:invalid-precision({})>", precision);
-  }
-  // Note: -LDBL_TRUE_MIN requires 4954 characters ('-' and 4953 digits)
-  auto buffer_sizes = std::array{
-      56zU + precision,  336zU + precision,
-    1280zU + precision, 4960zU + precision};
-  return impl::try_to_chars(
-    buffer_sizes, value, std::chars_format::fixed, precision);
-}
-
+/**
+ * to_string(FloatT) where FloatT is one of floating-point type.
+ * Note: Only general and hex modes are supported.
+ */
 template <class FloatT>
   requires (std::is_floating_point_v<FloatT>)
 constexpr auto to_string(
   FloatT value, std::chars_format fmt = std::chars_format::general)
   -> std::string
 {
-  if (fmt == std::chars_format::fixed) {
-    return to_string_fixed_format(value);
+  if (fmt != std::chars_format::general && fmt != std::chars_format::hex) {
+    REFLECT_CPP26_ERROR_IF_CONSTEVAL("Unsupported format mode.");
+    return "<ERROR:invalid-format>";
   }
-  if (fmt != std::chars_format::hex && fmt != std::chars_format::scientific &&
-      fmt != std::chars_format::general) {
-    REFLECT_CPP26_ERROR_IF_CONSTEVAL("Invalid argument 'fmt'.");
-    return std::format(
-      "<ERROR:invalid-chars-format({})>", std::to_underlying(fmt));
-  }
-  // 56 bytes is enough for hex and scientific mode with 128-bit IEEE quadraple.
-  constexpr auto buffer_size = 56zU;
+  // 64 bytes is enough for hex and scientific mode with 128-bit IEEE quadraple.
+  constexpr auto buffer_size = 64zU;
   char buffer[buffer_size];
   auto [ptr, ec] = std::to_chars(
     buffer, buffer + buffer_size, value, fmt);
@@ -276,23 +209,22 @@ constexpr auto to_string(
   return "<ERROR:internal-error>";
 }
 
+/**
+ * to_string(FloatT, fmt, precision) where FloatT is one of floating-point type.
+ * Note: Only general and hex modes are supported.
+ */
 template <class FloatT>
   requires (std::is_floating_point_v<FloatT>)
 constexpr auto to_string(FloatT value, std::chars_format fmt, int precision)
   -> std::string
 {
-  if (fmt == std::chars_format::fixed) {
-    return to_string_fixed_format(value, precision);
-  }
   if (precision < 0) {
     REFLECT_CPP26_ERROR_IF_CONSTEVAL("Invalid precision: non-negative only.");
-    return std::format("<ERROR:invalid-precision({})>", precision);
+    return "<ERROR:invalid-precision>";
   }
-  if (fmt != std::chars_format::hex && fmt != std::chars_format::scientific &&
-      fmt != std::chars_format::general) {
-    REFLECT_CPP26_ERROR_IF_CONSTEVAL("Invalid argument 'fmt'.");
-    return std::format(
-      "<ERROR:invalid-chars-format({})>", std::to_underlying(fmt));
+  if (fmt != std::chars_format::general && fmt != std::chars_format::hex) {
+    REFLECT_CPP26_ERROR_IF_CONSTEVAL("Unsupported format mode.");
+    return "<ERROR:invalid-format>";
   }
   // 12 more bytes is enough for hex and scientific mode.
   auto res = std::string(precision + 12, '\0');
@@ -304,64 +236,151 @@ constexpr auto to_string(FloatT value, std::chars_format fmt, int precision)
   return "<ERROR:internal-error>";
 }
 
-constexpr auto to_string(const char* string) -> std::string
+namespace impl {
+constexpr auto write_display_string(
+  const char* input_cur, const char* input_end,
+  char* buffer_cur, const char* buffer_end) -> std::pair<const char*, char*>
+{
+  constexpr auto n_xdigits_per_byte = 2;
+  // spc: special control
+  constexpr char spc_chars[] =
+    {'\0', '\t', '\n', '\v', '\f', '\r', '"', '\\'};
+  constexpr char spc_chars_display[] =
+    { '0',  't',  'n',  'v',  'f',  'r', '"', '\\'};
+
+  for (; input_cur < input_end && buffer_cur < buffer_end; ++input_cur) {
+    // (1) Special control characters (see above)
+    auto spc_pos = std::ranges::find(spc_chars, *input_cur);
+    if (std::end(spc_chars) != spc_pos) {
+      if (buffer_end - buffer_cur < 2) {
+        break; // 2 : length of "\0" or "\t" etc.
+      }
+      *buffer_cur++ = '\\';
+      *buffer_cur++ = spc_chars_display[spc_pos - spc_chars];
+      continue;
+    }
+    // (2) Printable characters (including whitespace ' ')
+    if (isprint(*input_cur)) {
+      *buffer_cur++ = *input_cur;
+      continue;
+    }
+    // (3) Other non-printable characters
+    if (buffer_end - buffer_cur < 4) {
+      break; // 4 : length of "\xAB", where AB represents two hex digits
+    }
+    buffer_cur = std::copy_n("\\x", 2, buffer_cur);
+    buffer_cur = std::copy_n(
+      byte_to_hex_table_v + (uint8_t)(*input_cur) * n_xdigits_per_byte,
+      n_xdigits_per_byte, buffer_cur);
+  }
+  return std::pair{input_cur, buffer_cur};
+}
+
+constexpr auto to_display_string(std::string_view string) -> std::string
+{
+  if (string.empty()) {
+    return "\"\"";
+  }
+  auto res = std::string{"\""};
+  auto temp = std::string{};
+  const auto* input_cur = string.data();
+  const auto* input_end = input_cur + string.size();
+
+  constexpr auto extra_reserved_size = 16zU;
+  for (; input_cur != input_end; ) {
+    temp.resize_and_overwrite(string.size() + extra_reserved_size,
+      [&input_cur, input_end](char* buffer_cur, size_t buffer_length) {
+        const auto* buffer_begin = buffer_cur;
+        std::tie(input_cur, buffer_cur) = write_display_string(
+          input_cur, input_end, buffer_cur, buffer_cur + buffer_length);
+        return buffer_cur - buffer_begin;
+      });
+    (res += temp);
+  }
+  res.push_back('"');
+  return res;
+}
+} // namespace impl
+
+/**
+ * to_string(const char*)
+ */
+constexpr auto to_string(const char* string, bool display_style = false)
+  -> std::string
 {
 #ifdef REFLECT_CPP26_ENABLE_TO_STRING_OVERLOAD_TEST
   return "to_string(const char*)";
 #else
-  return std::string{string};
+  return display_style ? impl::to_display_string(string) : std::string{string};
 #endif
 }
 
+/**
+ * to_string(const std::string&)
+ */
 template <class Traits, class Alloc>
-constexpr auto to_string(const std::basic_string<char, Traits, Alloc>& string)
-  -> std::string
+constexpr auto to_string(
+  const std::basic_string<char, Traits, Alloc>& string,
+  bool display_style = false) -> std::string
 {
 #ifdef REFLECT_CPP26_ENABLE_TO_STRING_OVERLOAD_TEST
   return "to_string(const basic_string&)";
 #else
-  using StringType = std::basic_string<char, Traits, Alloc>;
-  if constexpr (std::is_same_v<StringType, std::string>) {
-    return string;
-  } else {
-    return StringType{string.begin(), string.end()};
-  }
+  auto sv = std::string_view{string.data(), string.size()};
+  return display_style ? impl::to_display_string(sv) : std::string{sv};
 #endif
 }
 
+/**
+ * to_string(std::string&&) with move-semantic optimization.
+ */
 template <class Traits, class Alloc>
-constexpr auto to_string(std::basic_string<char, Traits, Alloc>&& string)
+constexpr auto to_string(
+  std::basic_string<char, Traits, Alloc>&& string, bool display_style = false)
   -> std::string
 {
 #ifdef REFLECT_CPP26_ENABLE_TO_STRING_OVERLOAD_TEST
   return "to_string(basic_string&&)";
 #else
-  using StringType = std::basic_string<char, Traits, Alloc>;
-  if constexpr (std::is_same_v<StringType, std::string>) {
+  if (display_style) {
+    return impl::to_display_string({string.data(), string.size()});
+  }
+  if constexpr (std::is_same_v<
+      std::remove_cvref_t<decltype(string)>, std::string>) {
     return std::move(string);
   } else {
-    return StringType{string.begin(), string.end()};
+    return std::string{string.data(), string.size()};
   }
 #endif
 }
 
+/**
+ * to_string(std::string_view)
+ */
 template <class Traits>
-constexpr auto to_string(std::basic_string_view<char, Traits> string)
+constexpr auto to_string(
+  std::basic_string_view<char, Traits> string, bool display_style = false)
   -> std::string
 {
 #ifdef REFLECT_CPP26_ENABLE_TO_STRING_OVERLOAD_TEST
   return "to_string(basic_string_view)";
 #else
-  return std::string{string.begin(), string.end()};
+  auto sv = std::string_view{string.data(), string.size()};
+  return display_style ? impl::to_display_string(sv) : std::string{sv};
 #endif
 }
 
-constexpr auto to_string(meta_string_view string) -> std::string
+/**
+ * to_string(meta_string_view)
+ */
+constexpr auto to_string(meta_string_view string, bool display_style = false)
+  -> std::string
 {
 #ifdef REFLECT_CPP26_ENABLE_TO_STRING_OVERLOAD_TEST
   return "to_string(meta_string_view)";
 #else
-  return std::string{string.begin(), string.end()};
+  auto sv = std::string_view{string.data(), string.size()};
+  return display_style ? impl::to_display_string(sv) : std::string{sv};
 #endif
 }
 } // namespace reflect_cpp26

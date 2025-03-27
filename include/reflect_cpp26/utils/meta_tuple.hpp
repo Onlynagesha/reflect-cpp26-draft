@@ -1,9 +1,10 @@
 #ifndef REFLECT_CPP26_UTILS_META_TUPLE_HPP
 #define REFLECT_CPP26_UTILS_META_TUPLE_HPP
 
+// Note: Beware circular dependency when including type_traits/* headers.
 #include <reflect_cpp26/type_traits/template_instance.hpp>
 #include <reflect_cpp26/type_traits/tuple_like_types.hpp>
-#include <reflect_cpp26/utils/meta_utility.hpp>
+#include <reflect_cpp26/utils/utility.hpp>
 #include <ranges>
 
 namespace reflect_cpp26 {
@@ -35,6 +36,7 @@ struct meta_tuple {
   consteval {
     define_aggregate(^^underlying_type, {data_member_spec(^^Args)...});
   }
+  // values are exposed as public data member to make meta_tuple aggregate.
   underlying_type values;
 
 private:
@@ -47,9 +49,8 @@ private:
     : values{impl::get_from_tuple<Is>(std::forward<TupleLike>(tuple))...} {}
 
 public:
-  template <class... InputArgs>
-  consteval meta_tuple(InputArgs&&... args)
-    : values{std::forward<InputArgs>(args)...} {}
+  // cvref dropped during CTAD
+  consteval meta_tuple(const Args&... args) : values{args...} {}
 
   template <class TupleLike>
     requires (is_tuple_like_of_elements_v<TupleLike, Args...>)
@@ -71,18 +72,37 @@ public:
     return *this;
   }
 
-  template <size_t I, class Self>
+  /**
+   * Free get function of meta_tuple.
+   */
+  template <size_t I>
     requires (I < tuple_size)
-  constexpr decltype(auto) get(this Self&& self)
-  {
-    constexpr auto ith_field = get_nth_field(I);
-    if constexpr (std::is_lvalue_reference_v<Self>) {
-      return self.[:ith_field:];
-    } else {
-      return std::move(self.[:ith_field:]);
-    }
+  friend constexpr auto& get(meta_tuple<Args...>& tuple) {
+    return tuple.values.[: get_nth_field(I) :];
+  }
+
+  template <size_t I>
+    requires (I < tuple_size)
+  friend constexpr const auto& get(const meta_tuple<Args...>& tuple) {
+    return tuple.values.[: get_nth_field(I) :];
+  }
+
+  template <size_t I>
+    requires (I < tuple_size)
+  friend constexpr auto&& get(meta_tuple<Args...>&& tuple) {
+    return std::move(tuple.values.[: get_nth_field(I) :]);
+  }
+
+  template <size_t I>
+    requires (I < tuple_size)
+  friend constexpr const auto&& get(const meta_tuple<Args...>&& tuple) {
+    return std::move(tuple.values.[: get_nth_field(I) :]);
   }
 };
+
+// Deduction guide (cvref dropped, same behavior as std::tuple)
+template <class... Args>
+meta_tuple(Args...) -> meta_tuple<Args...>;
 
 /**
  * Whether T is the underlying type of some meta_tuple.
@@ -90,16 +110,6 @@ public:
 template <class T>
 constexpr auto is_underlying_type_of_meta_tuple_v =
   parent_of(^^T) == ^^meta_tuple;
-
-/**
- * Free get function of meta_tuple.
- */
-template <size_t I, class MetaTuple>
-  requires (is_template_instance_of_v<MetaTuple, meta_tuple>
-    && I < std::tuple_size_v<MetaTuple>)
-constexpr decltype(auto) get(MetaTuple&& tuple) {
-  return std::forward<MetaTuple>(tuple).template get<I>();
-}
 } // namespace reflect_cpp26
 
 template <class... Args>

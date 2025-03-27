@@ -62,7 +62,7 @@ constexpr auto is_accessible_by_member_function_pointer_v = []() {
   using Target = typename Traits::target_type;
   using Args = typename Traits::args_type;
 
-  return tuple_apply_v<std::is_invocable_r,
+  return type_tuple_apply_v<std::is_invocable_r,
     type_tuple_cat_t<type_tuple<Target, decltype(MemPtr), T>, Args>>;
 }();
 
@@ -88,6 +88,26 @@ constexpr auto is_accessible_by_member_pointer_v = []() {
 template <class T, auto MemPtr>
 concept accessible_by_member_pointer =
   is_accessible_by_member_pointer_v<T, MemPtr>;
+
+/**
+ * Whether Member is a reflection to an accessible non-static member
+ * variable or function of T, either directly defined by T or
+ * inherited from public base classes.
+ */
+template <class T, std::meta::info Member>
+constexpr auto is_accessible_by_member_reflection_v = []() {
+  if constexpr (is_nonstatic_data_member(Member)) {
+    return requires (T t) { t.[:Member:]; };
+  } else if constexpr (is_class_member(Member) && !is_static_member(Member)) {
+    return is_accessible_by_member_function_pointer_v<T, &[:Member:]>;
+  } else {
+    static_assert(false, "Member must be a non-static class member");
+  }
+}();
+
+template <class T, std::meta::info Member>
+concept accessible_by_member_reflection =
+  is_accessible_by_member_reflection_v<T, Member>;
 
 namespace impl {
 template <class T>
@@ -324,7 +344,7 @@ consteval auto check_flattened_members()
     res &= is_accessible_by_member_object_pointer_v<
       T, &[:cur_spec.value.member:]>;
     // No union member is allowed.
-    res &= !is_union_type(cur_spec.value.member);
+    res &= !is_union_type(type_of(cur_spec.value.member));
     return res;
   });
   return res;
@@ -410,7 +430,8 @@ consteval auto is_flattenable_aggregate() -> bool;
  * 1. T is an array type (bounded U[N] or unbounded U[]);
  * 2. T is a class type that satisfies all the additional constraints below:
  *   (1) T is an aggregate;
- *   (2) Every direct base class is a flattenable aggregate, recursively.
+ *   (2) T has no virtual member functions;
+ *   (3) Every direct base class is a flattenable aggregate, recursively.
  */
 template <class T>
 constexpr auto is_flattenable_aggregate_v = std::is_array_v<T>;
@@ -418,14 +439,15 @@ constexpr auto is_flattenable_aggregate_v = std::is_array_v<T>;
 template <class T>
   requires (std::is_class_v<T> && std::is_aggregate_v<T>)
 constexpr auto is_flattenable_aggregate_v<T> =
-  is_flattenable_aggregate<std::remove_cv_t<T>>();
+  is_flattenable_v<T>
+    && impl::is_flattenable_aggregate<std::remove_cv_t<T>>();
 
 template <class T>
 concept flattenable_aggregate = is_flattenable_aggregate_v<T>;
 
 namespace impl {
 template <class T>
-consteval auto is_flattenable_aggregate() -> T
+consteval auto is_flattenable_aggregate() -> bool
 {
   static_assert(std::is_class_v<T>, "Non-class type not allowed.");
   if constexpr (!std::is_aggregate_v<T>) {
@@ -561,7 +583,294 @@ consteval bool is_structured_type()
     return false;
   }
 }
+
+struct reduce_memberwise_result_t {
+  size_t true_count;
+  size_t false_count;
+};
+
+template <template <class...> class Predicate, class... Ts>
+consteval auto reduce_direct_memberwise()
+{
+  auto true_count = 0zU;
+  auto false_count = 0zU;
+  constexpr auto min_member_size = std::ranges::min({
+    currently_accessible_nonstatic_data_members_of(^^Ts).size()...});
+
+  REFLECT_CPP26_EXPAND_I(min_member_size).for_each(
+    [&true_count, &false_count](auto I) {
+      constexpr auto cur_result = Predicate<[:type_of(
+        currently_accessible_nonstatic_data_members_of(^^Ts)[I]):]...>::value;
+      (cur_result ? true_count : false_count) += 1;
+    });
+  return reduce_memberwise_result_t{true_count, false_count};
+}
+
+template <template <class...> class Predicate, class... Ts>
+constexpr auto reduce_direct_memberwise_v =
+  reduce_direct_memberwise<Predicate, std::remove_cv_t<Ts>...>();
+
+template <class Predicate, class... Ts>
+consteval auto reduce_direct_memberwise_meta()
+{
+  constexpr auto invocable_with_info = type_tuple_is_invocable_r_v<
+    bool, Predicate, type_tuple_repeat_t<std::meta::info, sizeof...(Ts)>>;
+  static_assert(invocable_with_info,
+    "Invalid call signature: Expects (std::meta::info...) -> bool");
+
+  auto true_count = 0zU;
+  auto false_count = 0zU;
+  constexpr auto min_member_size = std::ranges::min({
+    currently_accessible_nonstatic_data_members_of(^^Ts).size()...});
+
+  REFLECT_CPP26_EXPAND_I(min_member_size).for_each(
+    [&true_count, &false_count](auto I) {
+      auto cur_result = std::invoke(Predicate{},
+        currently_accessible_nonstatic_data_members_of(^^Ts)[I]...);
+      (cur_result ? true_count : false_count) += 1;
+    });
+  return reduce_memberwise_result_t{true_count, false_count};
+}
+
+template <class Predicate, class... Ts>
+constexpr auto reduce_direct_memberwise_meta_v =
+  reduce_direct_memberwise_meta<Predicate, std::remove_cv_t<Ts>...>();
+
+template <template <class...> class Predicate, class... Ts>
+consteval auto reduce_flattened_memberwise()
+{
+  auto true_count = 0zU;
+  auto false_count = 0zU;
+  constexpr auto min_member_size = std::ranges::min({
+    flattened_accessible_nonstatic_data_members_v<Ts>.size()...});
+
+  REFLECT_CPP26_EXPAND_I(min_member_size).for_each(
+    [&true_count, &false_count](auto I) {
+      constexpr auto cur_result = Predicate<[:type_of(get<I>(
+        flattened_accessible_nonstatic_data_members_v<Ts>).member):]...>::value;
+      (cur_result ? true_count : false_count) += 1;
+    });
+  return reduce_memberwise_result_t{true_count, false_count};
+}
+
+template <template <class...> class Predicate, class... Ts>
+constexpr auto reduce_flattened_memberwise_v =
+  reduce_flattened_memberwise<Predicate, std::remove_cv_t<Ts>...>();
+
+template <class Predicate, class... Ts>
+consteval auto reduce_flattened_memberwise_meta()
+{
+  constexpr auto invocable_with_spec = type_tuple_is_invocable_r_v<
+    bool, Predicate, type_tuple_repeat_t<
+      flattened_data_member_spec, sizeof...(Ts)>>;
+  constexpr auto invocable_with_info = type_tuple_is_invocable_r_v<
+    bool, Predicate, type_tuple_repeat_t<std::meta::info, sizeof...(Ts)>>;
+
+  auto true_count = 0zU;
+  auto false_count = 0zU;
+  constexpr auto min_member_size = std::ranges::min({
+    flattened_accessible_nonstatic_data_members_v<Ts>.size()...});
+
+  if constexpr (invocable_with_spec) {
+    REFLECT_CPP26_EXPAND_I(min_member_size).for_each(
+      [&true_count, &false_count](auto I) {
+        auto cur_result = std::invoke(Predicate{}, get<I>(
+          flattened_accessible_nonstatic_data_members_v<Ts>)...);
+        (cur_result ? true_count : false_count) += 1;
+      });
+  } else if constexpr (invocable_with_info) {
+    REFLECT_CPP26_EXPAND_I(min_member_size).for_each(
+      [&true_count, &false_count](auto I) {
+        auto cur_result = std::invoke(Predicate{}, get<I>(
+          flattened_accessible_nonstatic_data_members_v<Ts>).member...);
+        (cur_result ? true_count : false_count) += 1;
+      });
+  } else {
+    static_assert(false, "Invalid call signature: Expects "
+      "either predicate(std::meta::info...) -> bool "
+      "or predicate(flattened_data_member_spec...) -> bool");
+  }
+  return reduce_memberwise_result_t{true_count, false_count};
+}
+
+template <class Predicate, class... Ts>
+constexpr auto reduce_flattened_memberwise_meta_v =
+  reduce_flattened_memberwise_meta<Predicate, std::remove_cv_t<Ts>...>();
 } // namespace impl
+
+#define REFLECT_CPP26_MEMBERWISE_REDUCTION_V_LIST(F)  \
+  F(all, false_count == 0)                            \
+  F(any, true_count > 0)                              \
+  F(none, true_count == 0)
+
+#define REFLECT_CPP26_MAKE_DIRECT_MEMBERWISE_REDUCTION_V(reduction, pred) \
+  template <template <class...> class Predicate, class... Ts>             \
+    requires (std::is_class_v<Ts> && ...)                                 \
+  constexpr auto reduction##_of_direct_memberwise_v =                     \
+    impl::reduce_direct_memberwise_v<Predicate, Ts...>.pred;              \
+                                                                          \
+  template <class Predicate, class... Ts>                                 \
+    requires (std::is_class_v<Ts> && ...)                                 \
+  constexpr auto reduction##_of_direct_memberwise_meta_v =                \
+    impl::reduce_direct_memberwise_meta_v<Predicate, Ts...>.pred;
+
+/**
+ * all|any|none_of_direct_memberwise_v<Predicate, Ts...>
+ *   Checks whether Predicate<
+ *     jth-direct-member-type-of(Ts...[0], j), ...,
+ *     jth-direct-member-type-of(Ts...[K - 1], j)>::value
+ *   is true for all/any/none of j = 0 to N - 1 where
+ *     jth-direct-member-type-of(T, j) gets the type
+ *       (qualifiers preserved) of j-th direct accessible NSDM of class T.
+ *     N = min(count of direct accessible NSDMs of T) for T in Ts...
+ *     K = sizeof...(Ts)
+ *
+ * all|any|none_of_direct_memberwise_meta_v<Predicate, Ts...>
+ *   Checks whether Predicate{}.operator()(
+ *     jth-direct-member-of(Ts...[0], j), ...,
+ *     jth-direct-member-of(Ts...[K - 1], j))
+ *   is true for all/any/none of j = 0 to N - 1 where
+ *     jth-direct-member-of(T, j) gets the std::meta::info
+ *       of j-th direct accessible non-static data member of class T.
+ *     N and K are same as above.
+ */
+REFLECT_CPP26_MEMBERWISE_REDUCTION_V_LIST(
+  REFLECT_CPP26_MAKE_DIRECT_MEMBERWISE_REDUCTION_V)
+
+#define REFLECT_CPP26_MAKE_FLATTENED_MEMBERWISE_REDUCTION_V(reduction, pred)  \
+  template <template <class...> class Predicate, class... Ts>                 \
+    requires (is_partially_flattenable_v<Ts> && ...)                          \
+  constexpr auto reduction##_of_flattened_memberwise_v =                      \
+    impl::reduce_flattened_memberwise_v<Predicate, Ts...>.pred;               \
+                                                                              \
+  template <class Predicate, class... Ts>                                     \
+    requires (is_partially_flattenable_v<Ts> && ...)                          \
+  constexpr auto reduction##_of_flattened_memberwise_meta_v =                 \
+    impl::reduce_flattened_memberwise_meta_v<Predicate, Ts...>.pred;
+
+/**
+ * all|any|none_of_flattened_memberwise_v<Predicate, Ts...>
+ *   Checks whether Predicate<
+ *     jth-flattened-member-type-of(Ts...[0], j), ...,
+ *     jth-flattened-member-type-of(Ts...[K - 1], j)>::value
+ *   is true for all/any/none of j = 0 to N - 1 where
+ *     jth-flattened-member-type-of(T, j) gets the type
+ *       (qualifiers preserved) of j-th flattened accessible NSDM of class T.
+ *     N = min(count of flattened accessible NSDMs of T) for T in Ts...
+ *     K = sizeof...(Ts)
+ *
+ * all|any|none_of_flattened_memberwise_meta_v<Predicate, Ts...>
+ *   Checks whether Predicate{}.operator()(
+ *     jth-flattened-member-of(Ts...[0], j), ...,
+ *     jth-flattened-member-of(Ts...[K - 1], j))
+ *   is true for all/any/none of j = 0 to N - 1 where
+ *     jth-flattened-member-of(T, j) gets the
+ *       std::meta::info or flattened_data_member_spec
+ *       of j-th flattened accessible non-static data member of class T.
+ *     N and K are same as above.
+ */
+ REFLECT_CPP26_MEMBERWISE_REDUCTION_V_LIST(
+  REFLECT_CPP26_MAKE_FLATTENED_MEMBERWISE_REDUCTION_V)
+
+#undef REFLECT_CPP26_MEMBERWISE_REDUCTION_V_LIST
+#undef REFLECT_CPP26_MAKE_DIRECT_MEMBERWISE_REDUCTION_V
+#undef REFLECT_CPP26_MAKE_FLATTENED_MEMBERWISE_REDUCTION_V
+
+namespace impl {
+template <class Transform, class... Ts>
+struct aggregate_by_direct_memberwise_zip_transform {
+  static_assert(type_tuple_is_invocable_r_v<
+    std::meta::info, Transform, type_tuple_repeat_t<
+      std::meta::info, sizeof...(Ts)>>,
+    "Invalid call signature of Transform: "
+    "Expects (std::meta::info...) -> std::meta::info");
+
+  struct type;
+  consteval {
+    constexpr auto min_member_size = std::ranges::min({
+      currently_accessible_nonstatic_data_members_of(^^Ts).size()...});
+    auto members = std::vector<std::meta::info>{};
+    members.reserve(min_member_size);
+
+    REFLECT_CPP26_EXPAND_I(min_member_size).for_each([&members](auto I) {
+      auto cur_member = std::invoke(Transform{},
+        currently_accessible_nonstatic_data_members_of(^^Ts)[I]...);
+      if (!is_data_member_spec(cur_member)) {
+        throw "Result of transform function must be a data member spec.";
+      }
+      members.push_back(cur_member);
+    });
+    define_aggregate(^^type, members);
+  }
+};
+
+template <class Transform, class... Ts>
+struct aggregate_by_flattened_memberwise_zip_transform {
+  static constexpr auto invocable_with_info = type_tuple_is_invocable_r_v<
+    std::meta::info, Transform, type_tuple_repeat_t<
+      std::meta::info, sizeof...(Ts)>>;
+  static constexpr auto invocable_with_spec = type_tuple_is_invocable_r_v<
+    std::meta::info, Transform, type_tuple_repeat_t<
+      flattened_data_member_spec, sizeof...(Ts)>>;
+
+  static_assert(invocable_with_info || invocable_with_spec,
+    "Invalid call signature of Transform: Expects "
+    "either (std::meta::info...) -> std::meta::info "
+    "or (flattened_data_member_spec...) -> std::meta::info");
+
+  static consteval auto ith_member_getter(auto I) -> std::meta::info
+  {
+    if constexpr (invocable_with_spec) {
+      return std::invoke(Transform{}, get<I>(
+        flattened_accessible_nonstatic_data_members_v<Ts>)...);
+    } else {
+      return std::invoke(Transform{}, get<I>(
+        flattened_accessible_nonstatic_data_members_v<Ts>).member...);
+    }
+  }
+
+  struct type;
+  consteval {
+    constexpr auto min_member_size = std::ranges::min({
+      flattened_accessible_nonstatic_data_members_v<Ts>.size()...});
+    auto members = std::vector<std::meta::info>{};
+    members.reserve(min_member_size);
+
+    REFLECT_CPP26_EXPAND_I(min_member_size).for_each([&members](auto I) {
+      auto cur_member = ith_member_getter(I);
+      if (!is_data_member_spec(cur_member)) {
+        throw "Result of transform function must be a data member spec.";
+      }
+      members.push_back(cur_member);
+    });
+    define_aggregate(^^type, members);
+  }
+};
+} // namespace impl
+
+/**
+ * Makes aggregate type whose j-th data member spec is
+ *   Predicate{}.operator()(
+ *     jth-direct-member-of(Ts...[0], j), ...,
+ *     jth-direct-member-of(Ts...[K - 1], j)) for j = 0 to N - 1.
+ */
+template <class Transform, class... Ts>
+  requires (std::is_class_v<Ts> && ...)
+using aggregate_by_direct_memberwise_zip_transform_t =
+  typename impl::aggregate_by_direct_memberwise_zip_transform<
+    Transform, std::remove_cv_t<Ts>...>::type;
+
+/**
+ * Makes aggregate type whose j-th data member spec is
+ *   Predicate{}.operator()(
+ *     jth-flattened-member-of(Ts...[0], j), ...,
+ *     jth-flattened-member-of(Ts...[K - 1], j)) for j = 0 to N - 1.
+ */
+template <class Transform, class... Ts>
+  requires (is_partially_flattenable_v<Ts> && ...)
+using aggregate_by_flattened_memberwise_zip_transform_t =
+  typename impl::aggregate_by_flattened_memberwise_zip_transform<
+    Transform, std::remove_cv_t<Ts>...>::type;
 } // namespace reflect_cpp26
 
 #endif // REFLECT_CPP26_TYPE_TRAITS_CLASS_TYPE_HPP

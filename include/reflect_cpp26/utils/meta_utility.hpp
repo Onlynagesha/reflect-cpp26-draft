@@ -92,12 +92,12 @@ consteval auto reflect_pointer_to_member(Member T::*mptr) -> std::meta::info
 // -------- Extration helpers --------
 
 template <std::meta::info V>
-consteval auto extract_value() {
+consteval auto extract() {
   return std::meta::extract<[:type_of(V):]>(V);
 }
 
 template <std::meta::info V>
-consteval auto extract_value(constant<V>) {
+consteval auto extract(constant<V>) {
   return std::meta::extract<[:type_of(V):]>(V);
 }
 
@@ -124,6 +124,13 @@ consteval bool extract_bool(std::meta::info templ, Args... templ_params)
     std::meta::substitute(templ, {templ_params...}));
 }
 
+template <class MetaRange>
+  requires (std::ranges::input_range<MetaRange>)
+consteval bool extract_bool(std::meta::info templ, MetaRange&& templ_params)
+{
+  return std::meta::extract<bool>(
+    std::meta::substitute(templ, std::forward<MetaRange>(templ_params)));
+}
 // -------- Substitution helpers --------
 
 template <class... Args>

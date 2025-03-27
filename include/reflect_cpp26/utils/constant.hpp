@@ -1,6 +1,7 @@
 #ifndef REFLECT_CPP26_UTILS_CONSTANT_HPP
 #define REFLECT_CPP26_UTILS_CONSTANT_HPP
 
+// Root header: include C++ stdlib headers only to prevent circular dependency.
 #include <array>
 #include <limits>
 #include <span>

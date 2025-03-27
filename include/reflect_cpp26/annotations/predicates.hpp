@@ -113,7 +113,7 @@ struct boundary_test_t : predicate_tag_t {
   {
     using BoundaryValueT = std::ranges::range_value_t<BoundaryT>;
     using InputValueT    = std::ranges::range_value_t<InputT>;
-    // Signedness-safe comparision is used for integral ranges as well.
+    // Signedness-safe comparison is used for integral ranges as well.
     using Compare3WayT = std::conditional_t<
       all_of_v<std::is_integral, BoundaryValueT, InputValueT>,
       cmp_three_way_t, compare_three_way_t>;
@@ -132,7 +132,7 @@ struct boundary_test_t : predicate_tag_t {
   template <class InputT>
   constexpr bool test(const InputT& value) const
   {
-    // (1) Range comparision when boundary is a range itself.
+    // (1) Range comparison when boundary is a range itself.
     //     Note that basic_meta_string_view, as a special kind of range,
     //     is not in this case.
     if constexpr (is_template_instance_of_v<BoundaryT, meta_span>) {
@@ -140,12 +140,12 @@ struct boundary_test_t : predicate_tag_t {
         "Input must be another range when boundary is a range.");
       return test_range(value);
     }
-    // (2) Integral comparision.
+    // (2) Integral comparison.
     //     Signedness-safe comparison functionality is used.
     else if constexpr (all_of_v<std::is_integral, BoundaryT, InputT>) {
       return IntComp::operator()(value, boundary);
     }
-    // (3) Generic comparision, including basic_meta_string_view
+    // (3) Generic comparison, including basic_meta_string_view
     //     with other string-like types or const CharT*.
     else {
       return GenericComp::operator()(value, boundary);
@@ -330,7 +330,7 @@ constexpr bool validate_members(
 
     auto annotations = REFLECT_CPP26_EXPAND(std::meta::annotations_of(m));
     annotations.for_each([&res, &cur_value, error_output, m](auto a) {
-      constexpr auto cur_annotation = extract_value(a);
+      constexpr auto cur_annotation = extract(a);
       if constexpr (is_predicate_v<decltype(cur_annotation)>) {
         res &= cur_annotation.test(cur_value);
         if (!res && error_output != nullptr) {
@@ -362,7 +362,7 @@ constexpr bool validate_members_full(const T& obj, std::string* error_output)
 
     auto annotations = REFLECT_CPP26_EXPAND(std::meta::annotations_of(m));
     annotations.for_each([&res_cur_value, &cur_value, error_output, m](auto a) {
-      constexpr auto cur_annotation = extract_value(a);
+      constexpr auto cur_annotation = extract(a);
       if constexpr (is_predicate_v<decltype(cur_annotation)>) {
         auto cur_res = cur_annotation.test(cur_value);
         if (!cur_res) {

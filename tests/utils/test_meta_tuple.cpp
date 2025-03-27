@@ -12,12 +12,20 @@ TEST(UtilsMetaTuple, Basic)
   static_assert(std::is_same_v<std::tuple_element_t<2, tuple_type>, double>);
 
   auto t = tuple_type{'0', 123, 2.5};
-  // Member get()
-  EXPECT_EQ('0', t.get<0>());
-  EXPECT_EQ(123, t.get<1>());
-  EXPECT_EQ(2.5, t.get<2>());
   // Free get() via ADL
   EXPECT_EQ('0', get<0>(t));
   EXPECT_EQ(123, get<1>(t));
   EXPECT_EQ(2.5, get<2>(t));
+}
+
+TEST(UtilsMetaTuple, CTAD)
+{
+  constexpr auto x = 1;
+  constexpr auto y = 2.0;
+  auto t = rfl::meta_tuple{x, y};
+  static_assert(std::is_same_v<rfl::meta_tuple<int, double>, decltype(t)>);
+  get<0>(t) += 100;
+  get<1>(t) += 1.5;
+  EXPECT_EQ(101, get<0>(t));
+  EXPECT_EQ(3.5, get<1>(t));
 }
