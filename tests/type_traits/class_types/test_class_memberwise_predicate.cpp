@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include <reflect_cpp26/type_traits/class_types.hpp>
+#include <reflect_cpp26/type_traits.hpp>
 #include <reflect_cpp26/utils/utility.hpp>
 
 namespace rfl = reflect_cpp26;

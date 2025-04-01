@@ -1,6 +1,8 @@
 #ifndef REFLECT_CPP26_ANNOTATIONS_PREDICATES_HPP
 #define REFLECT_CPP26_ANNOTATIONS_PREDICATES_HPP
 
+#include <reflect_cpp26/type_traits/reduction.hpp>
+#include <reflect_cpp26/type_traits/template_instance.hpp>
 #include <reflect_cpp26/utils/define_static_values.hpp>
 #include <reflect_cpp26/utils/expand.hpp>
 #include <reflect_cpp26/utils/meta_span.hpp>

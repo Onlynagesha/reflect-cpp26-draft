@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include <reflect_cpp26/type_traits/tuple_like_types.hpp>
+#include <reflect_cpp26/type_traits.hpp>
 #include <reflect_cpp26/utils/constant.hpp>
 #include <reflect_cpp26/utils/meta_tuple.hpp>
 
@@ -96,11 +96,11 @@ static_assert(identifier_length_product<
   std::monostate, std::errc>::value == 36, "Incorrect test case.");
 
 static_assert(std::is_same_v<
-  std::remove_const_t<decltype(rfl::tuple_elementwise_zip_transform_v<
+  decltype(rfl::tuple_elementwise_zip_transform_v<
     identifier_length_product,
     std::tuple<std::strong_ordering, std::weak_ordering, std::partial_ordering>,
-    std::tuple<std::errc, std::to_chars_result>>)>,
-  rfl::constant<
+    std::tuple<std::errc, std::to_chars_result>>),
+  const rfl::constant<
     15zU * 4zU, // len("strong_ordering") * len("errc")
     13zU * 15zU // len("weak_ordering") * len("to_chars_result")
   >>);

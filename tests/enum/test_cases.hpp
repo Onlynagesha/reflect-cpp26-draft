@@ -94,6 +94,10 @@ enum single {
 enum class single_rep {
   hahaha = 233,
   laugh = 233,
+  over = 233,
+  and_over = 233,
+  again = 233,
+  unstoppable = 233,
 };
 
 // From: https://github.com/fmtlib/fmt/blob/master/include/fmt/color.h

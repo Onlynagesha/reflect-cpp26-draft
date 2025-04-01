@@ -1,12 +1,12 @@
 #ifndef REFLECT_CPP26_UTILS_CONSTANT_HPP
 #define REFLECT_CPP26_UTILS_CONSTANT_HPP
 
-// Root header: include C++ stdlib headers only to prevent circular dependency.
+#include <reflect_cpp26/type_traits/is_invocable.hpp>
+#include <reflect_cpp26/type_traits/template_instance.hpp>
 #include <array>
 #include <limits>
 #include <span>
 #include <tuple>
-#include <type_traits>
 #include <vector>
 
 namespace reflect_cpp26 {
@@ -17,18 +17,6 @@ struct constant;
  * Null index.
  */
 constexpr auto npos = std::numeric_limits<size_t>::max();
-
-/**
- * Stronger constraint than std::is_invocable_r_v with implicit conversion
- * of result type banned. Usable if ambiguity is a concern.
- */
-template <class R, class Func, class... Args>
-constexpr auto is_invocable_exactly_r_v = false;
-
-template <class R, class Func, class... Args>
-  requires (std::is_invocable_v<Func, Args...>)
-constexpr auto is_invocable_exactly_r_v<R, Func, Args...> =
-  std::is_same_v<std::invoke_result_t<Func, Args...>, R>;
 
 namespace impl {
 template <auto U, auto V>
@@ -55,38 +43,42 @@ template <auto U, auto V>
 constexpr auto constants_are_equal_v<U, V> =
   std::is_same_v<decltype(U), decltype(V)>;
 
-template <auto V, size_t I, class Func>
-constexpr bool constant_for_each_call_dispatch(const Func& body)
-{
-  constexpr auto dispatch_key =
-    is_invocable_exactly_r_v<bool, Func, constant<I>, constant<V>> * 8 +
-    is_invocable_exactly_r_v<void, Func, constant<I>, constant<V>> * 4 +
-    is_invocable_exactly_r_v<bool, Func, constant<V>> * 2 +
-    is_invocable_exactly_r_v<void, Func, constant<V>> * 1;
-
-  if constexpr (dispatch_key == 0b10'00) {
-    return std::invoke(body, constant<I>{}, constant<V>{});
-  } else if constexpr (dispatch_key == 0b01'00) {
-    std::invoke(body, constant<I>{}, constant<V>{});
-    return true;
-  } else if constexpr (dispatch_key == 0b00'10) {
-    return std::invoke(body, constant<V>{});
-  } else if constexpr (dispatch_key == 0b00'01) {
-    std::invoke(body, constant<V>{});
-    return true;
-  } else {
-    static_assert(false, "Invalid or ambiguous call signature.");
-  }
-}
-
 template <template <auto...> class Derived, auto... Vs>
 struct constant_base {
 private:
+  static constexpr auto has_nested_constant =
+    (is_nontype_template_instance_of_v<decltype(Vs), Derived> || ...);
+  static_assert(!has_nested_constant, "Vs... shall not contain constant<...>.");
+
+  template <auto V, size_t I, class Func>
+  static constexpr bool for_each_call_dispatch(const Func& body)
+  {
+    constexpr auto dispatch_key =
+      is_invocable_exactly_r_v<bool, Func, Derived<I>, Derived<V>> * 8 +
+      is_invocable_exactly_r_v<void, Func, Derived<I>, Derived<V>> * 4 +
+      is_invocable_exactly_r_v<bool, Func, Derived<V>> * 2 +
+      is_invocable_exactly_r_v<void, Func, Derived<V>> * 1;
+  
+    if constexpr (dispatch_key == 0b10'00) {
+      return std::invoke(body, Derived<I>{}, Derived<V>{});
+    } else if constexpr (dispatch_key == 0b01'00) {
+      std::invoke(body, Derived<I>{}, Derived<V>{});
+      return true;
+    } else if constexpr (dispatch_key == 0b00'10) {
+      return std::invoke(body, Derived<V>{});
+    } else if constexpr (dispatch_key == 0b00'01) {
+      std::invoke(body, Derived<V>{});
+      return true;
+    } else {
+      static_assert(false, "Invalid or ambiguous call signature.");
+    }
+  }
+
   template <size_t I, class Func>
   static constexpr bool for_each_impl(const Func& body)
   {
     if constexpr (I < sizeof...(Vs)) {
-      return constant_for_each_call_dispatch<Vs...[I], I>(body)
+      return for_each_call_dispatch<Vs...[I], I>(body)
         && for_each_impl<I + 1>(body);
     } else {
       return true;
@@ -98,10 +90,13 @@ private:
   {
     if constexpr (I >= sizeof...(Vs)) {
       return Derived<>();
-    } else if constexpr (std::invoke(Func, Vs...[I])) {
-      return Derived<Vs...[I]>::concat(filter_impl<I + 1, Func>());
     } else {
-      return filter_impl<I + 1, Func>();
+      constexpr auto cur = Derived<Vs...[I]>{};
+      if constexpr (std::invoke(Func, cur)) {
+        return Derived<Vs...[I]>::concat(filter_impl<I + 1, Func>());
+      } else {
+        return filter_impl<I + 1, Func>();
+      }
     }
   }
 
@@ -111,7 +106,11 @@ private:
     if constexpr (I >= sizeof...(Vs)) {
       return Prev;
     } else {
-      constexpr auto Next = std::invoke(Func, Prev, Vs...[I]);
+      constexpr auto Next = std::invoke(
+        Func, Derived<Prev>{}, Derived<Vs...[I]>{});
+      static_assert(
+        !is_nontype_template_instance_of_v<decltype(Next), Derived>,
+        "Result of func shall not be constant<x>. Return x instead.");
       return reduce_impl<I + 1, Func, Next>();
     }
   }
@@ -155,20 +154,23 @@ public:
    * Maps value list with given unary function in compile-time.
    */
   template <auto Func>
-  static constexpr auto map() {
-    return Derived<std::invoke(Func, Vs)...>{};
+  static constexpr auto map() /* -> constant<mapped_Vs...> */ {
+    return Derived<std::invoke(Func, Derived<Vs>{})...>{};
   }
 
   /**
    * Maps value list with given unary function.
-   * Returns an array {body(Vs)...} with each element converted to common type.
+   * Returns an array {body(constant<Vs>)...} with each element
+   * converted to common type.
    */
   template <class Func>
   static constexpr auto map(Func&& body)
   {
     using ResultT = std::common_type_t<
-      std::invoke_result_t<Func, decltype(Vs)>...>;
-    return std::array<ResultT, sizeof...(Vs)>{std::invoke(body, Vs)...};
+      std::invoke_result_t<Func, Derived<Vs>>...>;
+    using ResultArrayT = std::array<
+      ResultT, sizeof...(Vs)>;
+    return ResultArrayT{std::invoke(body, Derived<Vs>{})...};
   }
 
   /**
@@ -192,10 +194,10 @@ public:
     res.reserve(sizeof...(Vs));
     auto try_add = [&body, &res](auto cur) {
       if (std::invoke(body, cur)) {
-        res.emplace_back(cur);
+        res.emplace_back(cur.value);
       }
     };
-    (try_add(Vs), ...);
+    (try_add(Derived<Vs>{}), ...);
     return res;
   }
 
@@ -208,8 +210,8 @@ public:
    *   return result
    */
   template <auto Func, auto Init>
-  static constexpr auto reduce() {
-    return Derived<reduce_impl<0, Func, Init>()>();
+  static constexpr auto reduce() /* -> reduced_value */ {
+    return reduce_impl<0, Func, Init>();
   }
 
   /**
@@ -223,9 +225,9 @@ public:
   template <class Func, class T>
   static constexpr auto reduce(Func&& body, T init) -> T
   {
-    static_assert((std::is_invocable_r_v<T, Func, T, decltype(Vs)> && ...),
+    static_assert((std::is_invocable_r_v<T, Func, T, Derived<Vs>> && ...),
       "Invalid call signature.");
-    (void)((init = std::invoke(body, init, Vs)), ...);
+    (void)((init = std::invoke(body, init, Derived<Vs>{})), ...);
     return init;
   }
 
@@ -264,11 +266,6 @@ public:
     return index_of_impl<0, 1>(target);
   }
 
-  template <auto X>
-  static constexpr auto index_of() {
-    return Derived<index_of(X)>{};
-  }
-
   /**
    * Finds target in value list and returns the last index,
    * or npos if not found.
@@ -278,22 +275,12 @@ public:
     return index_of_impl<sizeof...(Vs) - 1, npos>(target);
   }
 
-  template <auto X>
-  static constexpr auto last_index_of() {
-    return Derived<last_index_of(X)>{};
-  }
-
   /**
    * Checks whether target equals to some element in value list.
    */
   template <class T>
   static constexpr auto includes(const T& target) -> bool {
     return index_of(target) != npos;
-  }
-
-  template <auto X>
-  static constexpr auto includes() {
-    return Derived<includes(X)>{};
   }
 
   /**

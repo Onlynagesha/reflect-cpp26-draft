@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include <reflect_cpp26/type_traits/class_types.hpp>
+#include <reflect_cpp26/type_traits.hpp>
 
 namespace rfl = reflect_cpp26;
 
@@ -158,6 +158,50 @@ static_assert(rfl::is_accessible_by_member_reflection_v<
   qux_t, ^^baz_t::str>);
 static_assert(rfl::is_accessible_by_member_reflection_v<
   qux_t, ^^qux_t::str>);
+
+// References
+struct references_A_t {
+  int& i;
+  const long& cl;
+};
+
+struct references_B_t : references_A_t {
+  volatile float& vf;
+  const volatile double& cvd;
+};
+
+// Note cannot form a pointer-to-member to member of reference type,
+// thus is_accessible_by_member_pointer_v is not usable with reference members.
+static_assert(rfl::is_accessible_by_member_reflection_v<
+  references_B_t, ^^references_A_t::i>);
+static_assert(rfl::is_accessible_by_member_reflection_v<
+  references_B_t, ^^references_A_t::cl>);
+static_assert(rfl::is_accessible_by_member_reflection_v<
+  references_B_t, ^^references_B_t::vf>);
+static_assert(rfl::is_accessible_by_member_reflection_v<
+  references_B_t, ^^references_B_t::cvd>);
+
+// Bit-fields
+struct bit_fields_A_t {
+  int32_t x: 1;
+  int32_t y: 2;
+};
+
+struct bit_fields_B_t : bit_fields_A_t {
+  int32_t a: 4;
+  int32_t b: 8;
+};
+
+// Note: Address of bit-field can not be requested,
+// thus is_accessible_by_member_pointer_v is not usable with bit-field members.
+static_assert(rfl::is_accessible_by_member_reflection_v<
+  bit_fields_B_t, ^^bit_fields_A_t::x>);
+static_assert(rfl::is_accessible_by_member_reflection_v<
+  bit_fields_B_t, ^^bit_fields_A_t::y>);
+static_assert(rfl::is_accessible_by_member_reflection_v<
+  bit_fields_B_t, ^^bit_fields_B_t::a>);
+static_assert(rfl::is_accessible_by_member_reflection_v<
+  bit_fields_B_t, ^^bit_fields_B_t::b>);
 
 TEST(TypeTraitsClassTypes, MemberReflections) {
   EXPECT_TRUE(true); // All test cases done with static-asserts above

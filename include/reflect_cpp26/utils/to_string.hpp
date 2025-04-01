@@ -124,9 +124,8 @@ constexpr auto char_to_string_dispatch(CharT value, bool quoted) -> std::string
   } else if constexpr (sizeof(CharT) == 2) {
     return to_string<std::endian::native>(static_cast<char16_t>(value), quoted);
   } else if constexpr (sizeof(CharT) == 4) {
+    static_assert(sizeof(CharT) == 4, "Unknown char type.");
     return to_string<std::endian::native>(static_cast<char32_t>(value), quoted);
-  } else {
-    static_assert(false, "Unknown char type.");
   }
 }
 
@@ -172,14 +171,17 @@ constexpr auto to_string(IntegerT value, int radix = 10) -> std::string
   }
   // 8 : One byte for minus sign '-' and other 7 bytes for alignment
   constexpr auto buffer_size = CHAR_BIT * sizeof(IntegerT) + 8;
-  char buffer[buffer_size];
-  auto [ptr, ec] = std::to_chars(buffer, buffer + buffer_size, value, radix);
-  if (std::errc{} != ec) {
-    REFLECT_CPP26_ERROR_IF_CONSTEVAL(
-      "Internal error: Failure during integer-to-string conversion.");
-    return "<ERROR:internal-error>";
-  }
-  return std::string{buffer, ptr};
+  auto res = std::string{};
+  res.resize_and_overwrite(buffer_size,
+    [value, radix](char* buffer, size_t buffer_size) {
+      auto [ptr, ec] = std::to_chars(
+        buffer, buffer + buffer_size, value, radix);
+      if (std::errc{} != ec) {
+        REFLECT_CPP26_UNREACHABLE("Internal error");
+      }
+      return ptr - buffer;
+    });
+  return res;
 }
 
 /**
@@ -198,15 +200,17 @@ constexpr auto to_string(
   }
   // 64 bytes is enough for hex and scientific mode with 128-bit IEEE quadraple.
   constexpr auto buffer_size = 64zU;
-  char buffer[buffer_size];
-  auto [ptr, ec] = std::to_chars(
-    buffer, buffer + buffer_size, value, fmt);
-  if (std::errc{} == ec) {
-    return std::string{buffer, ptr};
-  }
-  REFLECT_CPP26_ERROR_IF_CONSTEVAL(
-    "Internal error: Failure during float-to-string conversion.");
-  return "<ERROR:internal-error>";
+  auto res = std::string{};
+  res.resize_and_overwrite(buffer_size,
+    [value, fmt](char* buffer, size_t buffer_size) {
+      auto [ptr, ec] = std::to_chars(
+        buffer, buffer + buffer_size, value, fmt);
+      if (std::errc{} != ec) {
+        REFLECT_CPP26_UNREACHABLE("Internal error");
+      }
+      return ptr - buffer;
+    });
+  return res;
 }
 
 /**
@@ -226,14 +230,18 @@ constexpr auto to_string(FloatT value, std::chars_format fmt, int precision)
     REFLECT_CPP26_ERROR_IF_CONSTEVAL("Unsupported format mode.");
     return "<ERROR:invalid-format>";
   }
+  auto res = std::string{};
   // 12 more bytes is enough for hex and scientific mode.
-  auto res = std::string(precision + 12, '\0');
-  if (impl::try_to_chars(&res, value, fmt, precision)) {
-    return res;
-  }
-  REFLECT_CPP26_ERROR_IF_CONSTEVAL(
-    "Internal error: Failure during float-to-string conversion.");
-  return "<ERROR:internal-error>";
+  res.resize_and_overwrite(precision + 12,
+    [value, fmt, precision](char* buffer, size_t buffer_size) {
+      auto [ptr, ec] = std::to_chars(
+        buffer, buffer + buffer_size, value, fmt, precision);
+      if (std::errc{} != ec) {
+        REFLECT_CPP26_UNREACHABLE("Internal error");
+      }
+      return ptr - buffer;
+    });
+  return res;
 }
 
 namespace impl {
@@ -295,7 +303,7 @@ constexpr auto to_display_string(std::string_view string) -> std::string
           input_cur, input_end, buffer_cur, buffer_cur + buffer_length);
         return buffer_cur - buffer_begin;
       });
-    (res += temp);
+    res += temp;
   }
   res.push_back('"');
   return res;
@@ -306,13 +314,8 @@ constexpr auto to_display_string(std::string_view string) -> std::string
  * to_string(const char*)
  */
 constexpr auto to_string(const char* string, bool display_style = false)
-  -> std::string
-{
-#ifdef REFLECT_CPP26_ENABLE_TO_STRING_OVERLOAD_TEST
-  return "to_string(const char*)";
-#else
+  -> std::string {
   return display_style ? impl::to_display_string(string) : std::string{string};
-#endif
 }
 
 /**
@@ -323,12 +326,8 @@ constexpr auto to_string(
   const std::basic_string<char, Traits, Alloc>& string,
   bool display_style = false) -> std::string
 {
-#ifdef REFLECT_CPP26_ENABLE_TO_STRING_OVERLOAD_TEST
-  return "to_string(const basic_string&)";
-#else
   auto sv = std::string_view{string.data(), string.size()};
   return display_style ? impl::to_display_string(sv) : std::string{sv};
-#endif
 }
 
 /**
@@ -339,9 +338,6 @@ constexpr auto to_string(
   std::basic_string<char, Traits, Alloc>&& string, bool display_style = false)
   -> std::string
 {
-#ifdef REFLECT_CPP26_ENABLE_TO_STRING_OVERLOAD_TEST
-  return "to_string(basic_string&&)";
-#else
   if (display_style) {
     return impl::to_display_string({string.data(), string.size()});
   }
@@ -351,7 +347,6 @@ constexpr auto to_string(
   } else {
     return std::string{string.data(), string.size()};
   }
-#endif
 }
 
 /**
@@ -362,12 +357,8 @@ constexpr auto to_string(
   std::basic_string_view<char, Traits> string, bool display_style = false)
   -> std::string
 {
-#ifdef REFLECT_CPP26_ENABLE_TO_STRING_OVERLOAD_TEST
-  return "to_string(basic_string_view)";
-#else
   auto sv = std::string_view{string.data(), string.size()};
   return display_style ? impl::to_display_string(sv) : std::string{sv};
-#endif
 }
 
 /**
@@ -376,12 +367,8 @@ constexpr auto to_string(
 constexpr auto to_string(meta_string_view string, bool display_style = false)
   -> std::string
 {
-#ifdef REFLECT_CPP26_ENABLE_TO_STRING_OVERLOAD_TEST
-  return "to_string(meta_string_view)";
-#else
   auto sv = std::string_view{string.data(), string.size()};
   return display_style ? impl::to_display_string(sv) : std::string{sv};
-#endif
 }
 } // namespace reflect_cpp26
 

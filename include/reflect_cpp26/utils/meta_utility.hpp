@@ -140,6 +140,16 @@ consteval auto substitute(std::meta::info templ, Args... templ_params)
   return std::meta::substitute(templ, {templ_params...});
 }
 
+// -------- Splicing helpers --------
+
+struct splice_to_value_t {
+  template <std::meta::info V>
+  static constexpr auto operator()(constant<V>) {
+    return [:V:];
+  }
+};
+constexpr auto splice_to_value = splice_to_value_t{};
+
 } // namespace reflect_cpp26
 
 #endif // REFLECT_CPP26_UTILS_META_UTILITY_HPP

@@ -26,9 +26,19 @@
 #endif
 
 #if __cplusplus
-#define REFLECT_CPP26_ERROR_IF_CONSTEVAL(msg) if consteval { throw "msg"; }
+int reflect_cpp26_raise_error_if_consteval(const char* msg);
+#define REFLECT_CPP26_ERROR_IF_CONSTEVAL(msg)       \
+do {                                                \
+  if consteval {                                    \
+    reflect_cpp26_raise_error_if_consteval(msg);    \
+  }                                                 \
+} while (false)
 #else
-// No equivalent functionality in C
+#define REFLECT_CPP26_ERROR_IF_CONSTEVAL(msg) // No-op
 #endif
+
+#define REFLECT_CPP26_UNREACHABLE(msg)    \
+  REFLECT_CPP26_ERROR_IF_CONSTEVAL(msg);  \
+  __builtin_unreachable()
 
 #endif // REFLECT_CPP26_UTILS_CONFIG_H

@@ -1,7 +1,8 @@
 #ifndef REFLECT_CPP26_UTILS_DEFINE_STATIC_VALUES_HPP
 #define REFLECT_CPP26_UTILS_DEFINE_STATIC_VALUES_HPP
 
-#include <reflect_cpp26/utils/config.h> // IWYU pragma: keep
+#include <reflect_cpp26/type_traits/arithmetic_types.hpp>
+#include <reflect_cpp26/utils/config.h>
 #include <reflect_cpp26/utils/meta_span.hpp>
 #include <reflect_cpp26/utils/meta_string_view.hpp>
 #include <iterator>

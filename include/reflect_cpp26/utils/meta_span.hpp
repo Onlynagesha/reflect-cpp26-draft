@@ -6,12 +6,18 @@
 #include <span>
 
 namespace reflect_cpp26 {
+namespace impl {
+struct meta_subspan_tag_t {};
+constexpr auto meta_subspan_tag = meta_subspan_tag_t{};
+} // namespace impl
+
 /**
  * Structured alternative to std::span<const T>.
  * Semantic constraints: meta_span<T> is used for contiguous ranges
  * with static constant storage only.
  */
-template <class T> struct meta_span {
+template <class T>
+struct meta_span {
   using value_type = T;
   using pointer = T*;
   using const_pointer = const T*;
@@ -39,6 +45,12 @@ template <class T> struct meta_span {
   consteval meta_span(std::span<const T> span)
     : head(span.data()), tail(span.data() + span.size()) {}
 
+private:
+  // Note: making subspan is not forced to be consteval.
+  constexpr meta_span(impl::meta_subspan_tag_t, const T* head, const T* tail)
+    : head(head), tail(tail) {}
+
+public:
   constexpr operator std::span<const T>() const {
     return {head, tail};
   }
@@ -73,6 +85,23 @@ template <class T> struct meta_span {
 
   constexpr auto end() const -> const T* {
     return tail;
+  }
+
+  constexpr auto first(size_t n) const -> meta_span {
+    return {impl::meta_subspan_tag, head, head + n};
+  }
+
+  constexpr auto last(size_t n) const -> meta_span {
+    return {impl::meta_subspan_tag, tail - n, tail};
+  }
+
+  constexpr auto subspan(
+    size_t offset, size_t count = std::dynamic_extent) const -> meta_span
+  {
+    if (count == std::dynamic_extent) {
+      return {impl::meta_subspan_tag, head + offset, tail};
+    }
+    return {impl::meta_subspan_tag, head + offset, head + offset + count};
   }
 };
 } // namespace reflect_cpp26

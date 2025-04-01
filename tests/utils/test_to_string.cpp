@@ -4,96 +4,83 @@
 
 namespace rfl = reflect_cpp26;
 
-TEST(UtilsToString, CharToString)
-{
-  EXPECT_EQ("A", rfl::to_string('A'));
-  EXPECT_EQ("x", rfl::to_string(L'x'));
-  EXPECT_EQ("'+'", rfl::to_string(u8'+', true));
-  EXPECT_EQ("6", rfl::to_string(u'6'));
-  EXPECT_EQ("' '", rfl::to_string(U' ', true));
+// to_string(CharT)
+static_assert("A" == rfl::to_string('A'));
+static_assert("x" == rfl::to_string(L'x'));
+static_assert("'+'" == rfl::to_string(u8'+', true));
+static_assert("6" == rfl::to_string(u'6'));
+static_assert("' '" == rfl::to_string(U' ', true));
 
-  EXPECT_EQ("\\0", rfl::to_string('\0'));
-  EXPECT_EQ("'\\t'", rfl::to_string(static_cast<wchar_t>(9), true));
-  EXPECT_EQ("\\n", rfl::to_string(static_cast<char8_t>(10)));
-  EXPECT_EQ("'\\v'", rfl::to_string(static_cast<char16_t>(11), true));
-  EXPECT_EQ("\\f", rfl::to_string(static_cast<char32_t>(12)));
-  EXPECT_EQ("'\\r'", rfl::to_string(static_cast<char32_t>(13), true));
+static_assert("\\0" == rfl::to_string('\0'));
+static_assert("'\\t'" == rfl::to_string(static_cast<wchar_t>(9), true));
+static_assert("\\n" == rfl::to_string(static_cast<char8_t>(10)));
+static_assert("'\\v'" == rfl::to_string(static_cast<char16_t>(11), true));
+static_assert("\\f" == rfl::to_string(static_cast<char32_t>(12)));
+static_assert("'\\r'" == rfl::to_string(static_cast<char32_t>(13), true));
 
-  EXPECT_EQ("\\x01", rfl::to_string('\1'));
-  EXPECT_EQ("\\xfe", rfl::to_string(static_cast<char>(-2)));
-  EXPECT_EQ("\\x81", rfl::to_string(static_cast<char8_t>(129)));
-  EXPECT_EQ("\\x82", rfl::to_string(L'\u0082'));
-  EXPECT_EQ("'\\x83'", rfl::to_string(u'\u0083', true));
-  EXPECT_EQ("\\x84", rfl::to_string(U'\U00000084'));
+static_assert("\\x01" == rfl::to_string('\1'));
+static_assert("\\xfe" == rfl::to_string(static_cast<char>(-2)));
+static_assert("\\x81" == rfl::to_string(static_cast<char8_t>(129)));
+static_assert("\\x82" == rfl::to_string(L'\u0082'));
+static_assert("'\\x83'" == rfl::to_string(u'\u0083', true));
+static_assert("\\x84" == rfl::to_string(U'\U00000084'));
 
-  EXPECT_EQ("\\u0394", rfl::to_string(L'\u0394'));
-  EXPECT_EQ("\\u0395", rfl::to_string(u'\u0395'));
-  EXPECT_EQ("\\u0396", rfl::to_string(U'\u0396'));
-  EXPECT_EQ("'\\U0001f604'", rfl::to_string(U'\U0001F604', true));
+static_assert("\\u0394" == rfl::to_string(L'\u0394'));
+static_assert("\\u0395" == rfl::to_string(u'\u0395'));
+static_assert("\\u0396" == rfl::to_string(U'\u0396'));
+static_assert("'\\U0001f604'" == rfl::to_string(U'\U0001F604', true));
 
-  static_assert(rfl::to_string('A') == "A");
-  static_assert(rfl::to_string(L'\u0082', true) == "'\\x82'");
-  static_assert(rfl::to_string(u'\u0394') == "\\u0394");
-  static_assert(rfl::to_string(U'\U0001F604', true) == "'\\U0001f604'");
-}
+// to_string(IntegerT)
+static_assert("12345" == rfl::to_string(12345));
+static_assert("-128" == rfl::to_string(static_cast<int8_t>(128)));
+static_assert("128" == rfl::to_string(static_cast<uint8_t>(-128)));
 
-TEST(UtilsToString, IntToString)
-{
-  EXPECT_EQ("12345", rfl::to_string(12345));
-  EXPECT_EQ("-128", rfl::to_string(static_cast<int8_t>(128)));
-  EXPECT_EQ("128", rfl::to_string(static_cast<uint8_t>(-128)));
+static_assert("1001001100101100000001011010010"
+  == rfl::to_string(1234567890, 2));
+static_assert("-10012001001112202200" == rfl::to_string(-1234567890, 3));
+static_assert("11145401322" == rfl::to_string(1234567890, 8));
+static_assert("-2a5555016" == rfl::to_string(-1234567890, 12));
+static_assert("499602d2" == rfl::to_string(1234567890, 16));
+static_assert("-kf12oi" == rfl::to_string(-1234567890, 36));
 
-  EXPECT_EQ("1001001100101100000001011010010", rfl::to_string(1234567890, 2));
-  EXPECT_EQ("-10012001001112202200", rfl::to_string(-1234567890, 3));
-  EXPECT_EQ("11145401322", rfl::to_string(1234567890, 8));
-  EXPECT_EQ("-2a5555016", rfl::to_string(-1234567890, 12));
-  EXPECT_EQ("499602d2", rfl::to_string(1234567890, 16));
-  EXPECT_EQ("-kf12oi", rfl::to_string(-1234567890, 36));
+static_assert("-80"
+  == rfl::to_string(std::numeric_limits<int8_t>::lowest(), 16));
+static_assert("-80" + std::string(2, '0')
+  == rfl::to_string(std::numeric_limits<int16_t>::lowest(), 16));
+static_assert("-80" + std::string(6, '0')
+  == rfl::to_string(std::numeric_limits<int32_t>::lowest(), 16));
+static_assert("-80" + std::string(14, '0')
+  == rfl::to_string(std::numeric_limits<int64_t>::lowest(), 16));
 
-  EXPECT_EQ("-80",
-            rfl::to_string(std::numeric_limits<int8_t>::lowest(), 16));
-  EXPECT_EQ("-80" + std::string(2, '0'),
-            rfl::to_string(std::numeric_limits<int16_t>::lowest(), 16));
-  EXPECT_EQ("-80" + std::string(6, '0'),
-            rfl::to_string(std::numeric_limits<int32_t>::lowest(), 16));
-  EXPECT_EQ("-80" + std::string(14, '0'),
-            rfl::to_string(std::numeric_limits<int64_t>::lowest(), 16));
+static_assert(std::string(2, 'f')
+  == rfl::to_string(std::numeric_limits<uint8_t>::max(), 16));
+static_assert(std::string(4, 'f')
+  == rfl::to_string(std::numeric_limits<uint16_t>::max(), 16));
+static_assert(std::string(8, 'f')
+  == rfl::to_string(std::numeric_limits<uint32_t>::max(), 16));
+static_assert(std::string(16, 'f')
+  == rfl::to_string(std::numeric_limits<uint64_t>::max(), 16));
 
-  EXPECT_EQ(std::string(2, 'f'),
-            rfl::to_string(std::numeric_limits<uint8_t>::max(), 16));
-  EXPECT_EQ(std::string(4, 'f'),
-            rfl::to_string(std::numeric_limits<uint16_t>::max(), 16));
-  EXPECT_EQ(std::string(8, 'f'),
-            rfl::to_string(std::numeric_limits<uint32_t>::max(), 16));
-  EXPECT_EQ(std::string(16, 'f'),
-            rfl::to_string(std::numeric_limits<uint64_t>::max(), 16));
+static_assert("-1" + std::string(7, '0')
+  == rfl::to_string(std::numeric_limits<int8_t>::lowest(), 2));
+static_assert("-1" + std::string(15, '0')
+  == rfl::to_string(std::numeric_limits<int16_t>::lowest(), 2));
+static_assert("-1" + std::string(31, '0')
+  == rfl::to_string(std::numeric_limits<int32_t>::lowest(), 2));
+static_assert("-1" + std::string(63, '0')
+  == rfl::to_string(std::numeric_limits<int64_t>::lowest(), 2));
 
-  EXPECT_EQ("-1" + std::string(7, '0'),
-            rfl::to_string(std::numeric_limits<int8_t>::lowest(), 2));
-  EXPECT_EQ("-1" + std::string(15, '0'),
-            rfl::to_string(std::numeric_limits<int16_t>::lowest(), 2));
-  EXPECT_EQ("-1" + std::string(31, '0'),
-            rfl::to_string(std::numeric_limits<int32_t>::lowest(), 2));
-  EXPECT_EQ("-1" + std::string(63, '0'),
-            rfl::to_string(std::numeric_limits<int64_t>::lowest(), 2));
+static_assert(std::string(8, '1')
+  == rfl::to_string(std::numeric_limits<uint8_t>::max(), 2));
+static_assert(std::string(16, '1')
+  == rfl::to_string(std::numeric_limits<uint16_t>::max(), 2));
+static_assert(std::string(32, '1')
+  == rfl::to_string(std::numeric_limits<uint32_t>::max(), 2));
+static_assert(std::string(64, '1')
+  == rfl::to_string(std::numeric_limits<uint64_t>::max(), 2));
 
-  EXPECT_EQ(std::string(8, '1'),
-            rfl::to_string(std::numeric_limits<uint8_t>::max(), 2));
-  EXPECT_EQ(std::string(16, '1'),
-            rfl::to_string(std::numeric_limits<uint16_t>::max(), 2));
-  EXPECT_EQ(std::string(32, '1'),
-            rfl::to_string(std::numeric_limits<uint32_t>::max(), 2));
-  EXPECT_EQ(std::string(64, '1'),
-            rfl::to_string(std::numeric_limits<uint64_t>::max(), 2));
-
-  static_assert("12345" == rfl::to_string(12345));
-  static_assert("-kf12oi" == rfl::to_string(-1234567890, 36));
-  static_assert("-1" + std::string(63, '0') ==
-                rfl::to_string(std::numeric_limits<int64_t>::lowest(), 2));
-  static_assert(std::string(16, 'f') ==
-                rfl::to_string(std::numeric_limits<uint64_t>::max(), 16));
-}
-
+// Note: constexpr std::to_chars() with floating point types are
+// not supported by libc++ yet.
 TEST(UtilsToString, FloatToString)
 {
   EXPECT_EQ("9.875", rfl::to_string(9.875));
@@ -146,18 +133,25 @@ TEST(UtilsToString, StringToString)
 {
   auto non_const_str = std::string("non-const");
   EXPECT_EQ("non-const", rfl::to_string(non_const_str));
+
   const auto const_str = std::string("const");
   EXPECT_EQ("const", rfl::to_string(const_str));
-  EXPECT_EQ("prvalue", rfl::to_string(std::string("prvalue")));
+
+  static_assert("prvalue" == rfl::to_string(std::string("prvalue")));
+
   auto xrvalue_str = std::string("xrvalue");
   EXPECT_EQ("xrvalue", rfl::to_string(std::move(xrvalue_str)));
-  EXPECT_EQ("literal", rfl::to_string("literal"));
-  char char_array[] = "char[]";
-  EXPECT_EQ("char[]", rfl::to_string(char_array));
-  auto sv = std::string_view{"string_view"};
-  EXPECT_EQ("string_view", rfl::to_string(sv));
-  auto meta_sv = rfl::meta_string_view{"meta_string_view"};
-  EXPECT_EQ("meta_string_view", rfl::to_string(meta_sv));
+
+  static_assert("literal" == rfl::to_string("literal"));
+
+  constexpr char char_array[] = "char[]";
+  static_assert("char[]" == rfl::to_string(char_array));
+
+  constexpr auto sv = std::string_view{"string_view"};
+  static_assert("string_view" == rfl::to_string(sv));
+
+  constexpr auto meta_sv = rfl::meta_string_view{"meta_string_view"};
+  static_assert("meta_string_view" == rfl::to_string(meta_sv));
 }
 
 TEST(UtilsToString, StringToDisplayString)
@@ -165,27 +159,40 @@ TEST(UtilsToString, StringToDisplayString)
   auto non_const_str = std::string("ab\nde\tgh\vjk\fmn\rpq");
   EXPECT_EQ(R"("ab\nde\tgh\vjk\fmn\rpq")",
             rfl::to_string(non_const_str, true));
+
   const auto const_str = std::string("ab\x01 cd \x02 \nef \x03gh");
   EXPECT_EQ(R"("ab\x01 cd \x02 \nef \x03gh")",
             rfl::to_string(const_str, true));
-  EXPECT_EQ(R"("\n\t\xab")",
-            rfl::to_string(std::string("\n\t\xAB"), true));
+
+  static_assert(R"("\n\t\xab")"
+    == rfl::to_string(std::string("\n\t\xAB"), true));
+
   auto xrvalue_str = std::string(" \f, \\; \v ");
   EXPECT_EQ(R"(" \f, \\; \v ")",
             rfl::to_string(std::move(xrvalue_str), true));
-  EXPECT_EQ(R"("'\x04',\"\x80\",'\xff'")",
-            rfl::to_string("'\x04',\"\x80\",'\xFF'", true));
-  char char_array[] = "char_array[] =\n\t\"asdf\";";
-  EXPECT_EQ(R"("char_array[] =\n\t\"asdf\";")",
-            rfl::to_string(char_array, true));
+
+  static_assert(R"("'\x04',\"\x80\",'\xff'")"
+    == rfl::to_string("'\x04',\"\x80\",'\xFF'", true));
+
+  constexpr char char_array[] = "char_array[] =\n\t\"asdf\";";
+  static_assert(R"("char_array[] =\n\t\"asdf\";")"
+    == rfl::to_string(char_array, true));
+
   char char_array_with_null[] = "null\0inside";
   auto sv = std::string_view{
     char_array_with_null, std::size(char_array_with_null)};
   EXPECT_EQ(R"("null\0inside\0")", rfl::to_string(sv, true));
-  auto meta_sv = rfl::meta_string_view{"\"meta_string_view\""};
-  EXPECT_EQ(R"("\"meta_string_view\"")", rfl::to_string(meta_sv, true));
 
-  EXPECT_EQ(R"("\xf0")", rfl::to_string("\xf0", true));
-  EXPECT_EQ(R"("\\")", rfl::to_string("\\", true));
-  EXPECT_EQ(R"("\\\\\\\\")", rfl::to_string("\\\\\\\\", true));
+  constexpr auto meta_sv = rfl::meta_string_view{"\"meta_string_view\""};
+  static_assert(R"("\"meta_string_view\"")" == rfl::to_string(meta_sv, true));
+
+  static_assert(R"("\xf0")" == rfl::to_string("\xf0", true));
+  static_assert(R"("\\")" == rfl::to_string("\\", true));
+  static_assert(R"("\\\\\\\\")" == rfl::to_string("\\\\\\\\", true));
+  static_assert(R"__("\x01\x02\x03\x04\x05\x06\x07\x08\t\n\v\f\r)__"
+                R"__( !\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~)__"
+                R"__(\x80\x81\x82\x83\x84\x85\x86\x87\x88\x89\x8a")__"
+    == rfl::to_string("\x01\x02\x03\x04\x05\x06\x07\x08\t\n\v\f\r"
+                      " !\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~"
+                      "\x80\x81\x82\x83\x84\x85\x86\x87\x88\x89\x8a", true));
 }

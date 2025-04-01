@@ -61,7 +61,7 @@ constexpr auto is_accessible_by_member_function_pointer_v = []() {
   using Traits = member_pointer_traits<decltype(MemPtr)>;
   using Target = typename Traits::target_type;
   using Args = typename Traits::args_type;
-
+  // Note: cvref qualifiers of T may affect the result.
   return type_tuple_apply_v<std::is_invocable_r,
     type_tuple_cat_t<type_tuple<Target, decltype(MemPtr), T>, Args>>;
 }();
@@ -99,6 +99,7 @@ constexpr auto is_accessible_by_member_reflection_v = []() {
   if constexpr (is_nonstatic_data_member(Member)) {
     return requires (T t) { t.[:Member:]; };
   } else if constexpr (is_class_member(Member) && !is_static_member(Member)) {
+    // Note: cvref qualifiers of T may affect the result.
     return is_accessible_by_member_function_pointer_v<T, &[:Member:]>;
   } else {
     static_assert(false, "Member must be a non-static class member");
@@ -311,7 +312,8 @@ consteval auto walk_accessible_nonstatic_data_members() -> std::meta::info
       if (is_virtual(base.value)) {
         throw "Virtual inheritance is disallowed.";
       }
-      // TODO: Use correct base_offset after compiler bug of offset_of fixed
+      // TODO: Use correct base_offset
+      // after compiler bug of offset_of being fixed
       constexpr auto base_offset = 0zU;
       // constexpr auto base_offset = offset_of(base.value).bytes;
       using FromBase = flattened_accessible_nonstatic_data_members_t<
@@ -341,8 +343,7 @@ consteval auto check_flattened_members()
   auto res = true;
   members.for_each([&res](auto cur_spec) {
     // Each member must be accessible
-    res &= is_accessible_by_member_object_pointer_v<
-      T, &[:cur_spec.value.member:]>;
+    res &= is_accessible_by_member_reflection_v<T, cur_spec.value.member>;
     // No union member is allowed.
     res &= !is_union_type(type_of(cur_spec.value.member));
     return res;

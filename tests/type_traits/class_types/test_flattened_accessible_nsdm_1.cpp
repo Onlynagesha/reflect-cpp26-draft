@@ -1,6 +1,6 @@
 #include <gmock/gmock-matchers.h>
 #include <gtest/gtest.h>
-#include <reflect_cpp26/type_traits/class_types.hpp>
+#include <reflect_cpp26/type_traits.hpp>
 
 namespace rfl = reflect_cpp26;
 
@@ -86,14 +86,14 @@ TEST(TypeTraitsClassTypes, NSDMListGroup1Monostate)
 {
   constexpr auto std_monostate_members =
     rfl::flattened_accessible_nonstatic_data_members_v<std::monostate>;
-  EXPECT_EQ(0, std_monostate_members.size());
+  static_assert(std_monostate_members.size() == 0);
 }
 
 TEST(TypeTraitsClassTypes, NSDMListGroup1Foo)
 {
   constexpr auto foo_members =
     rfl::flattened_accessible_nonstatic_data_members_v<foo_t>;
-  EXPECT_EQ(2, foo_members.size());
+  static_assert(foo_members.size() == 2);
   auto expected_offsets = std::array{0zU, 4zU};
   EXPECT_THAT(foo_members.map<[](auto sp) {
       return sp.actual_offset.bytes;
@@ -109,7 +109,7 @@ TEST(TypeTraitsClassTypes, NSDMListGroup1Bar1)
 {
   constexpr auto bar_1_members =
     rfl::flattened_accessible_nonstatic_data_members_v<bar_1_t>;
-  EXPECT_EQ(4, bar_1_members.size());
+  static_assert(bar_1_members.size() == 4);
   auto expected_offsets = std::array{0zU, 4zU, 16zU, 20zU};
   EXPECT_THAT(bar_1_members.map<[](auto sp) {
       return sp.actual_offset.bytes;
@@ -128,7 +128,7 @@ TEST(TypeTraitsClassTypes, NSDMListGroup1Bar2)
 {
   constexpr auto bar_2_members =
     rfl::flattened_accessible_nonstatic_data_members_v<bar_2_t>;
-  EXPECT_EQ(3, bar_2_members.size());
+  static_assert(bar_2_members.size() == 3);
 
   auto bar_2 = bar_2_t{};
   bar_2.[:get<0>(bar_2_members).member:] = 100;
@@ -150,7 +150,7 @@ TEST(TypeTraitsClassTypes, NSDMListGroup1Bar3)
 {
   constexpr auto bar_3_members =
     rfl::flattened_accessible_nonstatic_data_members_v<bar_3_t>;
-  EXPECT_EQ(3, bar_3_members.size());
+  static_assert(bar_3_members.size() == 3);
 
   auto bar_3 = bar_3_t{};
   bar_3.[:get<0>(bar_3_members).member:] = 1000;
@@ -173,7 +173,7 @@ TEST(TypeTraitsClassTypes, NSDMListGroup1Baz1)
 {
   constexpr auto baz_1_members =
     rfl::flattened_accessible_nonstatic_data_members_v<baz_1_t>;
-  EXPECT_EQ(9, baz_1_members.size());
+  static_assert(baz_1_members.size() == 9);
 
   auto baz_1 = baz_1_t{};
   // inherited from bar_1
