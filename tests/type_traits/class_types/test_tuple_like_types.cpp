@@ -5,27 +5,69 @@
 
 namespace rfl = reflect_cpp26;
 
+// Non-tuple types
+static_assert(! rfl::is_tuple_like_v<void>);
+static_assert(! rfl::is_tuple_like_v<int>);
+static_assert(! rfl::is_tuple_like_v<std::vector<int>>);
+static_assert(! rfl::is_tuple_like_v<std::string>);
+
 using std_tuple = std::tuple<int, int&, int**>;
 static_assert(rfl::is_tuple_like_v<std_tuple>);
 using std_pair = std::pair<std::string&&, size_t&>;
-static_assert(rfl::is_tuple_like_v<std_pair>);
+static_assert(rfl::is_tuple_like_v<const std_pair>);
 using rfl_constant = rfl::constant<1, 2u, '3', 4.0>;
-static_assert(rfl::is_tuple_like_v<rfl_constant>);
+static_assert(rfl::is_tuple_like_v<volatile rfl_constant&>);
 using rfl_meta_tuple = rfl::meta_tuple<char, char*, char**>;
-static_assert(rfl::is_tuple_like_v<rfl_meta_tuple>);
+static_assert(rfl::is_tuple_like_v<const volatile rfl_meta_tuple&&>);
+
+using nested_std_tuple_1 = std::tuple<
+  std::pair<float, std::pair<int, unsigned>>,
+  std::tuple<char, std::tuple<short, int, std::tuple<float, double>>>>;
+static_assert(rfl::is_tuple_like_v<nested_std_tuple_1>);
+
+using nested_std_tuple_2 = std::tuple<
+  rfl::meta_tuple<char8_t, char16_t, char32_t>>;
+static_assert(rfl::is_tuple_like_v<const nested_std_tuple_2>);
+
+using nested_meta_tuple = rfl::meta_tuple<
+  rfl::meta_tuple<char, short, int, long>,
+  rfl::meta_tuple<float, double, rfl::meta_tuple<float, double>>>;
+static_assert(rfl::is_tuple_like_v<volatile nested_meta_tuple&&>);
 
 static_assert(rfl::is_tuple_like_of_elements_v<
   std_tuple, int, int&, int**>);
 static_assert(rfl::is_tuple_like_of_elements_v<
-  std_pair, std::string&&, size_t&>);
+  const std_pair, std::string&&, size_t&>);
 static_assert(rfl::is_tuple_like_of_elements_v<
-  rfl_constant, int, unsigned, char, double>);
+  volatile rfl_constant, int, unsigned, char, double>);
 static_assert(rfl::is_tuple_like_of_elements_v<
-  rfl_meta_tuple, char, char*, char**>);
-
+  const volatile rfl_meta_tuple&, char, char*, char**>);
 // Expects exact match
 static_assert(! rfl::is_tuple_like_of_elements_v<
   std_pair, std::string, size_t>);
+static_assert(! rfl::is_tuple_like_of_elements_v<
+  rfl_constant, int, unsigned, int, double>);
+static_assert(! rfl::is_tuple_like_of_elements_v<
+  rfl_meta_tuple, char, char const*, char* const*>);
+static_assert(! rfl::is_tuple_like_of_elements_v<
+  std_pair, std::string_view, unsigned>);
+
+// Exact match or conversion
+static_assert(rfl::is_tuple_like_with_elements_convertible_to_v<
+  std_tuple, int, int&, int**>);
+static_assert(rfl::is_tuple_like_with_elements_convertible_to_v<
+  const std_pair, std::string, size_t>);
+static_assert(rfl::is_tuple_like_with_elements_convertible_to_v<
+  volatile rfl_constant, int, unsigned, int, double>);
+static_assert(rfl::is_tuple_like_with_elements_convertible_to_v<
+  const volatile rfl_meta_tuple&, char, char const*, char* const*>);
+static_assert(rfl::is_tuple_like_with_elements_convertible_to_v<
+  std_pair, std::string_view, unsigned>);
+// std::string -> std::string_view is OK, but inverse is not.
+static_assert(rfl::is_tuple_like_with_elements_convertible_to_v<
+  std::tuple<std::string>, std::string_view>);
+static_assert(! rfl::is_tuple_like_with_elements_convertible_to_v<
+  std::tuple<std::string_view>, std::string>);
 
 // Unary predicate for-each
 static_assert(rfl::all_of_tuple_elementwise_v<std::is_pointer,
@@ -69,14 +111,14 @@ static_assert(rfl::are_tuple_like_of_same_size_v<
 // zip-substitute
 static_assert(std::is_same_v<
   rfl::tuple_elementwise_zip_substitute_t<rfl::meta_tuple,
-    std::tuple<short, int, long, long long>,
-    std::tuple<short*, int**, long***, long long****>,
+    std::tuple<short, int, long, double>,
+    std::tuple<short*, int**, long***, double****>,
     std::tuple<const char*, const wchar_t*, const char16_t*, const char32_t*>>,
   rfl::type_tuple<
     rfl::meta_tuple<short, short*, const char*>,
     rfl::meta_tuple<int, int**, const wchar_t*>,
     rfl::meta_tuple<long, long***, const char16_t*>,
-    rfl::meta_tuple<long long, long long****, const char32_t*>>>);
+    rfl::meta_tuple<double, double****, const char32_t*>>>);
 
 // zip-transform
 static_assert(std::is_same_v<

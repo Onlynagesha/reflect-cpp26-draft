@@ -150,7 +150,8 @@ TEST(UtilsToString, StringToString)
   constexpr auto sv = std::string_view{"string_view"};
   static_assert("string_view" == rfl::to_string(sv));
 
-  constexpr auto meta_sv = rfl::meta_string_view{"meta_string_view"};
+  constexpr auto meta_sv =
+    rfl::meta_string_view::from_literal("meta_string_view");
   static_assert("meta_string_view" == rfl::to_string(meta_sv));
 }
 
@@ -183,7 +184,8 @@ TEST(UtilsToString, StringToDisplayString)
     char_array_with_null, std::size(char_array_with_null)};
   EXPECT_EQ(R"("null\0inside\0")", rfl::to_string(sv, true));
 
-  constexpr auto meta_sv = rfl::meta_string_view{"\"meta_string_view\""};
+  constexpr auto meta_sv =
+    rfl::meta_string_view::from_literal("\"meta_string_view\"");
   static_assert(R"("\"meta_string_view\"")" == rfl::to_string(meta_sv, true));
 
   static_assert(R"("\xf0")" == rfl::to_string("\xf0", true));

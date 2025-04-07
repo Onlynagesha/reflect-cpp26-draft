@@ -2,19 +2,13 @@
 #define REFLECT_CPP26_ANNOTATIONS_PROPERTIES_HPP
 
 #include <reflect_cpp26/annotations/impl/lookup.hpp>
-#include <reflect_cpp26/utils/define_static_values.hpp>
-#include <reflect_cpp26/utils/meta_span.hpp>
-#include <reflect_cpp26/utils/meta_string_view.hpp>
+#include <reflect_cpp26/annotations/tags.hpp>
+#include <reflect_cpp26/type_operations/to_structured.hpp>
 #include <reflect_cpp26/utils/meta_utility.hpp>
 #include <concepts>
 #include <ranges>
 
 namespace reflect_cpp26::annotations {
-struct property_tag_t {};
-
-template <class Annotation>
-constexpr auto is_property_v = std::derived_from<Annotation, property_tag_t>;
-
 template <class Annotation>
 using property_value_type_t = decltype(std::declval<Annotation>().value);
 
@@ -36,71 +30,69 @@ struct rename_t : property_tag_t {
 struct version_t : property_tag_t {
   meta_string_view value;
 };
+struct version_since_t : property_tag_t {
+  meta_string_view value;
+};
 
 template <class Prop>
-struct property_assignment_t {
+struct make_property_t {
   using value_type = property_value_type_t<Prop>;
 
-  consteval auto operator=(value_type value) const -> Prop {
+  static consteval auto operator()(value_type value) -> Prop {
     return Prop{.value = value};
   }
+
+  template <class T>
+    requires (std::is_same_v<to_structured_t<T>, value_type>)
+  static consteval auto operator()(const T& value) -> Prop {
+    return Prop{.value = to_structured(value)};
+  }
 };
 
-struct alias_assignment_t : property_assignment_t<aliases_t> {
-  consteval auto operator=(meta_string_view value) const -> aliases_t
+template <class Prop>
+struct make_range_property_t : make_property_t<Prop> {
+  using base_type = make_property_t<Prop>;
+  using base_type::operator();
+
+  using value_type = base_type::value_type;
+  using range_value_type = std::ranges::range_value_t<value_type>;
+
+  template <class T>
+    requires (std::is_same_v<to_structured_t<T>, range_value_type>)
+  static consteval auto operator()(std::initializer_list<T> values) -> Prop
   {
-    auto to_span = define_static_array(std::views::single(value));
-    return aliases_t{.value = to_span};
+    auto span = to_structured(values);
+    return Prop{.value = span};
   }
+};
 
-  consteval auto operator=(std::initializer_list<meta_string_view> value) const
-    -> aliases_t {
-    auto to_span = define_static_array(value);
-    return aliases_t{.value = to_span};
-  }
+struct make_aliases_t : make_range_property_t<aliases_t> {
+  using base_type = make_range_property_t<aliases_t>;
+  using base_type::operator();
 
-  template <class Range>
-    requires (std::ranges::input_range<Range> &&
-      std::is_convertible_v<
-        std::ranges::range_value_t<Range>, meta_string_view>)
-  consteval auto operator=(const Range& value) const -> aliases_t
+  template <class T>
+    requires (std::is_same_v<to_structured_t<T>, meta_string_view>)
+  static consteval auto operator()(const T& value) -> aliases_t
   {
-    auto to_span = define_static_array(
-      value | std::views::transform([](auto str) {
-        return meta_string_view{str};
-      }));
-    return aliases_t{.value = to_span};
+    auto span = to_structured(std::views::single(value));
+    return aliases_t{.value = span};
   }
 };
 
-struct properties_assignment_entry_t {
-  [[no_unique_address]]
-  alias_assignment_t alias{};
-
-  [[no_unique_address]]
-  alias_assignment_t aliases{};
-
-  [[no_unique_address]]
-  property_assignment_t<arg_notation_t> arg_notation{};
-
-  [[no_unique_address]]
-  property_assignment_t<author_t> author{};
-
-  [[no_unique_address]]
-  property_assignment_t<description_t> description{};
-
-  [[no_unique_address]]
-  property_assignment_t<rename_t> rename{};
-
-  [[no_unique_address]]
-  property_assignment_t<version_t> version{};
-};
+constexpr auto make_alias = make_aliases_t{};
+constexpr auto make_aliases = make_aliases_t{};
+constexpr auto make_arg_notation = make_property_t<arg_notation_t>{};
+constexpr auto make_author = make_property_t<author_t>{};
+constexpr auto make_description = make_property_t<description_t>{};
+constexpr auto make_rename = make_property_t<rename_t>{};
+constexpr auto make_version = make_property_t<version_t>{};
+constexpr auto make_version_since = make_property_t<version_since_t>{};
 
 template <class Prop, auto MemPtr>
-consteval auto property_of_alt(property_value_type_t<Prop> alt)
+consteval auto property_of_alt(property_value_type_t<Prop> alt = {})
   -> property_value_type_t<Prop>
 {
-  constexpr auto meta = find_annotation_of_type(
+  constexpr auto meta = impl::find_annotation_of_type(
     ^^Prop, reflect_pointer_to_member(MemPtr));
   if constexpr (std::meta::info{} == meta) {
     return alt;
@@ -111,7 +103,7 @@ consteval auto property_of_alt(property_value_type_t<Prop> alt)
 template <class Prop, auto MemPtr>
 constexpr auto property_of_opt() -> std::optional<property_value_type_t<Prop>>
 {
-  constexpr auto meta = find_annotation_of_type(
+  constexpr auto meta = impl::find_annotation_of_type(
     ^^Prop, reflect_pointer_to_member(MemPtr));
   if constexpr (std::meta::info{} == meta) {
     return std::nullopt;
@@ -121,32 +113,37 @@ constexpr auto property_of_opt() -> std::optional<property_value_type_t<Prop>>
 
 template <auto MemPtr>
 constexpr auto aliases_of() -> meta_span<meta_string_view> {
-  return property_of_alt<aliases_t, MemPtr>({});
+  return property_of_alt<aliases_t, MemPtr>();
 }
 
 template <auto MemPtr>
 constexpr auto arg_notation_of() -> char {
-  return property_of_alt<arg_notation_t, MemPtr>('\0');
+  return property_of_alt<arg_notation_t, MemPtr>();
 }
 
 template <auto MemPtr>
 constexpr auto author_of() -> meta_string_view {
-  return property_of_alt<author_t, MemPtr>("");
+  return property_of_alt<author_t, MemPtr>();
 }
 
 template <auto MemPtr>
 constexpr auto description_of() -> meta_string_view {
-  return property_of_alt<description_t, MemPtr>("");
+  return property_of_alt<description_t, MemPtr>();
 }
 
 template <auto MemPtr>
 constexpr auto rename_of() -> meta_string_view {
-  return property_of_alt<rename_t, MemPtr>("");
+  return property_of_alt<rename_t, MemPtr>();
 }
 
 template <auto MemPtr>
 constexpr auto version_of() -> meta_string_view {
-  return property_of_alt<version_t, MemPtr>("");
+  return property_of_alt<version_t, MemPtr>();
+}
+
+template <auto MemPtr>
+constexpr auto version_since_of() -> meta_string_view {
+  return property_of_alt<version_since_t, MemPtr>();
 }
 } // namespace reflect_cpp26::annotations
 

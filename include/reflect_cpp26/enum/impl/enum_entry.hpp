@@ -114,9 +114,11 @@ consteval auto make_enum_value_entry_list() -> std::vector<enum_value_entry>
     "Enum types with more than 65535 entries are not supported.");
   auto entry_list = std::vector<enum_value_entry>{};
   enum_meta_for_each<E>([&entry_list](auto index, auto ec) {
+    auto value = enum_value_entry::make_value([:ec:]);
+    auto name = meta_string_view::from_std_string_view(identifier_of(ec.value));
     entry_list.push_back({
-      .value = enum_value_entry::make_value([:ec:]),
-      .name = std::meta::identifier_of(ec),
+      .value = value,
+      .name = name,
       .index_original_order = static_cast<uint16_t>(index),
     });
   });
@@ -142,7 +144,7 @@ consteval auto make_enum_hash_entry_list() -> std::vector<enum_hash_entry>
 {
   auto entry_list = std::vector<enum_hash_entry>{};
   enum_meta_for_each<E>([&entry_list](auto ec) {
-    auto name = std::meta::identifier_of(ec);
+    auto name = meta_string_view::from_std_string_view(identifier_of(ec.value));
     entry_list.push_back({
       .name_hash = bkdr_hash64(name),
       .value = enum_hash_entry::make_value([:ec:]),

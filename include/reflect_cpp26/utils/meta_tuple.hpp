@@ -8,23 +8,22 @@
 #include <ranges>
 
 namespace reflect_cpp26 {
-template <class... Args>
-struct meta_tuple;
-
-namespace impl {
+/**
+ * Generic tuple-get function.
+ */
 template <size_t I, class Tuple>
-constexpr decltype(auto) get_from_tuple(Tuple&& tuple)
+  requires (impl::has_tuple_member_get_ith_v<std::remove_cvref_t<Tuple>, I>
+         || impl::has_tuple_free_get_ith_v<std::remove_cvref_t<Tuple>, I>)
+constexpr decltype(auto) tuple_get(Tuple&& tuple)
 {
-  using TupleNoCVRef = std::remove_cvref_t<Tuple>;
-  if constexpr (has_tuple_member_get_ith_v<TupleNoCVRef, I>) {
+  constexpr auto uses_member_get =
+    impl::has_tuple_member_get_ith_v<std::remove_cvref_t<Tuple>, I>;
+  if constexpr (uses_member_get) {
     return std::forward<Tuple>(tuple).template get<I>();
-  } else if constexpr (has_tuple_free_get_ith_v<TupleNoCVRef, I>) {
+  } else { // uses_free_get
     return get<I>(std::forward<Tuple>(tuple));
-  } else {
-    static_assert(false, "Can not get from tuple-like object.");
   }
 }
-} // namespace impl
 
 template <class... Args>
 struct meta_tuple {
@@ -36,25 +35,31 @@ struct meta_tuple {
   consteval {
     define_aggregate(^^underlying_type, {data_member_spec(^^Args)...});
   }
-  // values are exposed as public data member to make meta_tuple aggregate.
+  // values are exposed as public data member to make meta_tuple
+  // structured aggregate.
   underlying_type values;
 
 private:
-  static consteval auto get_nth_field(size_t n) {
+  static constexpr auto get_nth_field(size_t n) {
     return all_direct_nonstatic_data_members_of(^^underlying_type)[n];
   }
 
-  template <class TupleLike, size_t... Is>
-  consteval meta_tuple(TupleLike&& tuple, std::index_sequence<Is...>)
-    : values{impl::get_from_tuple<Is>(std::forward<TupleLike>(tuple))...} {}
+  // Note: Requirements moved to private delegated constructor
+  // to prevent compile error: "satisfaction of constraint
+  // 'is_tuple_like_of_elements_v<TupleLike, Args...>' depends on itself"
+  template <tuple_like_of_elements<Args...> TupleLike, size_t... Is>
+  constexpr meta_tuple(TupleLike&& tuple, std::index_sequence<Is...>)
+    : values{tuple_get<Is>(std::forward<TupleLike>(tuple))...} {}
 
 public:
+  constexpr meta_tuple() = default;
+
   // cvref dropped during CTAD
-  consteval meta_tuple(const Args&... args) : values{args...} {}
+  constexpr meta_tuple(const Args&... args) : values{args...} {}
 
   template <class TupleLike>
-    requires (is_tuple_like_of_elements_v<TupleLike, Args...>)
-  consteval meta_tuple(TupleLike&& tuple)
+    /* requires (is_tuple_like_of_elements_v<TupleLike, Args...>) */
+  constexpr meta_tuple(TupleLike&& tuple)
     : meta_tuple(std::forward<TupleLike>(tuple),
                  std::make_index_sequence<tuple_size>{}) {}
 
@@ -66,8 +71,7 @@ public:
       all_direct_nonstatic_data_members_of(^^underlying_type);
     REFLECT_CPP26_EXPAND(members).for_each(
       [this, &tuple](auto index, auto member) {
-        values.[:member:] =
-          impl::get_from_tuple<index>(std::forward<TupleLike>(tuple));
+        values.[:member:] = tuple_get<index>(std::forward<TupleLike>(tuple));
       });
     return *this;
   }
@@ -77,25 +81,25 @@ public:
    */
   template <size_t I>
     requires (I < tuple_size)
-  friend constexpr auto& get(meta_tuple<Args...>& tuple) {
+  friend constexpr auto& get(meta_tuple& tuple) {
     return tuple.values.[: get_nth_field(I) :];
   }
 
   template <size_t I>
     requires (I < tuple_size)
-  friend constexpr const auto& get(const meta_tuple<Args...>& tuple) {
+  friend constexpr const auto& get(const meta_tuple& tuple) {
     return tuple.values.[: get_nth_field(I) :];
   }
 
   template <size_t I>
     requires (I < tuple_size)
-  friend constexpr auto&& get(meta_tuple<Args...>&& tuple) {
+  friend constexpr auto&& get(meta_tuple&& tuple) {
     return std::move(tuple.values.[: get_nth_field(I) :]);
   }
 
   template <size_t I>
     requires (I < tuple_size)
-  friend constexpr const auto&& get(const meta_tuple<Args...>&& tuple) {
+  friend constexpr const auto&& get(const meta_tuple&& tuple) {
     return std::move(tuple.values.[: get_nth_field(I) :]);
   }
 };

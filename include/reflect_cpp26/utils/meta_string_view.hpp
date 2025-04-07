@@ -1,6 +1,7 @@
 #ifndef REFLECT_CPP26_UTILS_META_STRING_VIEW_HPP
 #define REFLECT_CPP26_UTILS_META_STRING_VIEW_HPP
 
+#include <reflect_cpp26/utils/config.h>
 #include <algorithm>
 #include <compare>
 #include <format>
@@ -11,6 +12,9 @@
 namespace reflect_cpp26 {
 /**
  * Structured alternative to std::basic_string_view<CharT>.
+ * It's ensured that the referenced string is always null-terminated, i.e.
+ * the constraint *tail == '\0' always holds as long as meta_string_view is
+ * not default-constructed.
  * Semantic constraints: meta_basic_string_view<CharT> is used for strings
  * with static constant storage only.
  */
@@ -36,29 +40,56 @@ private:
     std::basic_string<CharT, std::char_traits<CharT>, Alloc>;
 
 public:
-  const CharT* head;
-  const CharT* tail;
+  const CharT* head = nullptr;
+  const CharT* tail = nullptr;
 
-  consteval meta_basic_string_view():
-    head(nullptr), tail(nullptr) {}
+  constexpr meta_basic_string_view() = default;
+
+  static consteval auto from_literal(const CharT* literal)
+  {
+    auto res = meta_basic_string_view{};
+    res.head = literal;
+    res.tail = std::ranges::find(literal, std::unreachable_sentinel, '\0');
+    return res;
+  }
 
   template <size_t N>
-  consteval meta_basic_string_view(const CharT (&literal)[N])
-    : head(literal), tail(literal + N - 1) {}
+  static consteval auto from_literal(const CharT (&literal)[N])
+    -> meta_basic_string_view
+  {
+    if (literal[N - 1] != '\0') {
+      compile_error("String literal must be null-terminated.");
+    }
+    return from_literal(static_cast<const CharT*>(literal));
+  }
 
-  consteval meta_basic_string_view(const CharT* literal)
-    : head(literal)
-    , tail(std::ranges::find(literal, std::unreachable_sentinel, '\0')) {}
+  template <size_t N>
+  static consteval auto from_array(const CharT (&arr)[N])
+    -> meta_basic_string_view
+  {
+    return from_literal(arr);
+  }
 
-  consteval meta_basic_string_view(const CharT* head, const CharT* tail)
-    : head(head), tail(tail) {}
+  template <size_t N>
+  static consteval auto from_array(const std::array<CharT, N>& arr)
+    -> meta_basic_string_view
+  {
+    if (arr[N - 1] != '\0') {
+      compile_error("String literal must be null-terminated.");
+    }
+    return from_literal(arr.data());
+  }
 
-  consteval meta_basic_string_view(const CharT* head, size_t length)
-    : head(head), tail(head + length) {}
+  static consteval auto from_std_string_view(std::basic_string_view<CharT> sv)
+    -> meta_basic_string_view
+  {
+    if (*sv.end() != '\0') {
+      compile_error("String literal must be null-terminated.");
+    }
+    return from_literal(sv.data());
+  }
 
-  consteval meta_basic_string_view(std::basic_string_view<CharT> sv)
-    : head(sv.data()), tail(sv.data() + sv.length()) {}
-
+  // Implicit conversion to std::string_view
   constexpr operator std::basic_string_view<CharT>() const {
     return {head, tail};
   }
@@ -95,13 +126,15 @@ public:
     return tail;
   }
 
-  // Ambiguity of overload resolution without the following constraints:
-  // (1) meta_string_view::operator<=>(
-  //       std::string_view implicitly converted to meta_string_view,
-  //       meta_string_view)
-  // (2) std::string_view::operator<=>(
-  //       meta_string_view implicitly converted to std::string_view,
-  //       std::string_view)
+  // Note: remove_suffix(n) is not provided since we need to ensure
+  // the constraint *tail == '\0' is always satisfied.
+  constexpr auto remove_prefix(size_t n) const -> meta_basic_string_view
+  {
+    auto res = meta_basic_string_view{};
+    res.head = this->head + n;
+    res.tail = this->tail;
+    return res;
+  }
 
   template <class RhsType>
     requires (std::is_same_v<meta_basic_string_view<CharT>, RhsType>)
@@ -133,21 +166,24 @@ public:
 
   constexpr auto operator<=>(const CharT* rhs) const -> std::strong_ordering
   {
-    const auto* rhs_tail = rhs;
-    for (; *rhs_tail != '\0'; ++rhs_tail) {}
+    const auto* rhs_tail = std::ranges::find(
+      rhs, std::unreachable_sentinel, '\0');
     return std::lexicographical_compare_three_way(head, tail, rhs, rhs_tail);
   }
 
   constexpr bool operator==(const CharT* rhs) const
   {
-    const auto* rhs_tail = rhs;
-    for (; *rhs_tail != '\0'; ++rhs_tail) {}
+    const auto* rhs_tail = std::ranges::find(
+      rhs, std::unreachable_sentinel, '\0');
     return std::ranges::equal(head, tail, rhs, rhs_tail);
   }
 };
 
 using meta_string_view = meta_basic_string_view<char>;
+using meta_wstring_view = meta_basic_string_view<wchar_t>;
 using meta_u8string_view = meta_basic_string_view<char8_t>;
+using meta_u16string_view = meta_basic_string_view<char16_t>;
+using meta_u32string_view = meta_basic_string_view<char32_t>;
 
 } // namespace reflect_cpp26
 

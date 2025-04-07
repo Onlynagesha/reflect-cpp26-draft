@@ -6,11 +6,6 @@
 #include <span>
 
 namespace reflect_cpp26 {
-namespace impl {
-struct meta_subspan_tag_t {};
-constexpr auto meta_subspan_tag = meta_subspan_tag_t{};
-} // namespace impl
-
 /**
  * Structured alternative to std::span<const T>.
  * Semantic constraints: meta_span<T> is used for contiguous ranges
@@ -30,27 +25,29 @@ struct meta_span {
   using size_type = size_t;
   using difference_type = ptrdiff_t;
 
-  const T* head;
-  const T* tail;
+  const T* head = nullptr;
+  const T* tail = nullptr;
 
-  consteval meta_span()
-    : head(nullptr), tail(nullptr) {}
+  constexpr meta_span() = default;
 
-  consteval meta_span(const T* head, const T* tail)
-    : head(head), tail(tail) {}
+  template <size_t N>
+  static consteval auto from_array(const T (&arr)[N]) -> meta_span
+  {
+    auto res = meta_span{};
+    res.head = arr;
+    res.tail = arr + N;
+    return res;
+  }
 
-  consteval meta_span(const T* head, size_t length)
-    : head(head), tail(head + length) {}
+  template <size_t N>
+  static consteval auto from_array(const std::array<T, N>& arr) -> meta_span
+  {
+    auto res = meta_span{};
+    res.head = arr.data();
+    res.tail = arr.data() + N;
+    return res;
+  }
 
-  consteval meta_span(std::span<const T> span)
-    : head(span.data()), tail(span.data() + span.size()) {}
-
-private:
-  // Note: making subspan is not forced to be consteval.
-  constexpr meta_span(impl::meta_subspan_tag_t, const T* head, const T* tail)
-    : head(head), tail(tail) {}
-
-public:
   constexpr operator std::span<const T>() const {
     return {head, tail};
   }
@@ -88,20 +85,24 @@ public:
   }
 
   constexpr auto first(size_t n) const -> meta_span {
-    return {impl::meta_subspan_tag, head, head + n};
+    return subspan(0, n);
   }
 
   constexpr auto last(size_t n) const -> meta_span {
-    return {impl::meta_subspan_tag, tail - n, tail};
+    return subspan(size() - n);
   }
 
   constexpr auto subspan(
     size_t offset, size_t count = std::dynamic_extent) const -> meta_span
   {
+    auto res = meta_span{};
+    res.head = this->head + offset;
     if (count == std::dynamic_extent) {
-      return {impl::meta_subspan_tag, head + offset, tail};
+      res.tail = this->tail;
+    } else {
+      res.tail = res.head + count;
     }
-    return {impl::meta_subspan_tag, head + offset, head + offset + count};
+    return res;
   }
 };
 } // namespace reflect_cpp26

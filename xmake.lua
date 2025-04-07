@@ -13,6 +13,7 @@ meta_test_cases = {
     "tests/utils/test_to_string",
     "tests/utils/test_meta_tuple",
     -- Type Traits
+    "tests/type_traits/class_types/test_function_types",
     "tests/type_traits/class_types/test_member_pointers",
     "tests/type_traits/class_types/test_member_reflections",
     "tests/type_traits/class_types/test_tuple_like_types",
@@ -22,9 +23,12 @@ meta_test_cases = {
     "tests/type_traits/class_types/test_structured_types",
     "tests/type_traits/class_types/test_class_memberwise_predicate",
     "tests/type_traits/class_types/test_class_memberwise_zip_transform",
+    -- Type Operations
+    "tests/type_operations/test_comparison",
+    "tests/type_operations/test_to_structured",
     -- Annotations
     -- "tests/annotations/test_predicates",
-    -- "tests/annotations/test_properties",
+    "tests/annotations/test_properties",
     -- Enum
     "tests/enum/impl/test_hash_collision_check",
     "tests/enum/test_enum_misc",

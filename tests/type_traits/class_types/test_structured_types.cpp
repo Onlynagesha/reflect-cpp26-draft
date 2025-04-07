@@ -3,9 +3,14 @@
 #include <reflect_cpp26/utils/meta_span.hpp>
 #include <reflect_cpp26/utils/meta_string_view.hpp>
 #include <reflect_cpp26/utils/meta_tuple.hpp>
+#include <cstdio>
 #include <system_error>
 
 namespace rfl = reflect_cpp26;
+
+// void
+static_assert(! rfl::is_structured_type_v<void>);
+static_assert(! rfl::is_structured_type_v<const void>);
 
 // integral type
 static_assert(rfl::is_structured_type_v<int>);
@@ -18,6 +23,11 @@ static_assert(rfl::is_structured_type_v<const volatile long double>);
 // pointers and nullptr
 using std_array_int_4 = std::array<int, 4>;
 using std_vector_int = std::vector<int>;
+constexpr auto printf_constant = rfl::constant<std::printf>{};
+constexpr auto printf_fptr = std::printf;
+// Note: decltype(printf) -> int (const char *, ...)
+static_assert(! rfl::is_structured_type_v<decltype(printf)>);
+
 static_assert(rfl::is_structured_type_v<void*>);
 static_assert(rfl::is_structured_type_v<const char*>);
 static_assert(rfl::is_structured_type_v<const char* const>);
@@ -26,6 +36,7 @@ static_assert(rfl::is_structured_type_v<volatile double* volatile>);
 static_assert(rfl::is_structured_type_v<const volatile std_array_int_4*>);
 static_assert(rfl::is_structured_type_v<const std_vector_int*>);
 static_assert(rfl::is_structured_type_v<void(*)(int)>);
+static_assert(rfl::is_structured_type_v<decltype(printf_fptr)>);
 static_assert(rfl::is_structured_type_v<std::nullptr_t>);
 static_assert(rfl::is_structured_type_v<const volatile std::nullptr_t>);
 

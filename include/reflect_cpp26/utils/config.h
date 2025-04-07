@@ -26,11 +26,13 @@
 #endif
 
 #if __cplusplus
-int reflect_cpp26_raise_error_if_consteval(const char* msg);
+namespace reflect_cpp26 {
+[[noreturn]] int compile_error(const char* msg) noexcept;
+} // namespace reflect_cpp26
 #define REFLECT_CPP26_ERROR_IF_CONSTEVAL(msg)       \
 do {                                                \
   if consteval {                                    \
-    reflect_cpp26_raise_error_if_consteval(msg);    \
+    ::reflect_cpp26::compile_error(msg);            \
   }                                                 \
 } while (false)
 #else

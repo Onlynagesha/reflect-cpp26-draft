@@ -227,7 +227,7 @@ consteval auto has_inaccessible_nonstatic_data_members() -> bool
   auto res = false;
   REFLECT_CPP26_EXPAND(all_direct_bases_of(^^T)).for_each([&res](auto base) {
     if constexpr (is_virtual(base.value)) {
-      throw "Virtual base class is not allowed.";
+      compile_error("Virtual base class is not allowed.");
     }
     if constexpr (is_public(base.value)) {
       res |= has_inaccessible_nonstatic_data_members_v<[:type_of(base.value):]>;
@@ -310,7 +310,7 @@ consteval auto walk_accessible_nonstatic_data_members() -> std::meta::info
   REFLECT_CPP26_EXPAND(globally_accessible_bases_of(^^T)).for_each(
     [&members](auto base) {
       if (is_virtual(base.value)) {
-        throw "Virtual inheritance is disallowed.";
+        compile_error("Virtual inheritance is disallowed.");
       }
       // TODO: Use correct base_offset
       // after compiler bug of offset_of being fixed
@@ -479,9 +479,8 @@ template <class T>
 consteval auto is_structured_type() -> bool;
 
 template <class T>
-constexpr auto is_value_initializable_structured_type_v = requires {
-  constant<T{}>{};
-};
+constexpr auto is_value_initializable_structured_type_v =
+  requires { constant<T{}>{}; };
 } // namespace impl
 
 /**
@@ -797,7 +796,7 @@ struct aggregate_by_direct_memberwise_zip_transform {
       auto cur_member = std::invoke(Transform{},
         currently_accessible_nonstatic_data_members_of(^^Ts)[I]...);
       if (!is_data_member_spec(cur_member)) {
-        throw "Result of transform function must be a data member spec.";
+        compile_error("Transform function result must be data member spec.");
       }
       members.push_back(cur_member);
     });
@@ -840,7 +839,7 @@ struct aggregate_by_flattened_memberwise_zip_transform {
     REFLECT_CPP26_EXPAND_I(min_member_size).for_each([&members](auto I) {
       auto cur_member = ith_member_getter(I);
       if (!is_data_member_spec(cur_member)) {
-        throw "Result of transform function must be a data member spec.";
+        compile_error("Transform function result must be data member spec.");
       }
       members.push_back(cur_member);
     });
@@ -867,8 +866,8 @@ using aggregate_by_direct_memberwise_zip_transform_t =
  *     jth-flattened-member-of(Ts...[0], j), ...,
  *     jth-flattened-member-of(Ts...[K - 1], j)) for j = 0 to N - 1.
  */
-template <class Transform, class... Ts>
-  requires (is_partially_flattenable_v<Ts> && ...)
+template <class Transform,
+          partially_flattenable... Ts>
 using aggregate_by_flattened_memberwise_zip_transform_t =
   typename impl::aggregate_by_flattened_memberwise_zip_transform<
     Transform, std::remove_cv_t<Ts>...>::type;

@@ -82,8 +82,7 @@ consteval auto make_enum_meta_entries_sorted_by_name()
 }
 
 template <class E, enum_entry_order Order>
-constexpr auto enum_meta_entries_v =
-  reflect_cpp26_raise_error_if_consteval("Invalid enum entry order.");
+constexpr auto enum_meta_entries_v = compile_error("Invalid enum entry order.");
 
 template <class E>
 constexpr auto enum_meta_entries_v<E, enum_entry_order::original> =

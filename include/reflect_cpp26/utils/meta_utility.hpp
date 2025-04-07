@@ -3,14 +3,9 @@
 
 #include <reflect_cpp26/utils/config.h>
 #include <reflect_cpp26/utils/expand.hpp>
+#include <reflect_cpp26/utils/ranges.hpp>
 
 namespace reflect_cpp26 {
-enum class policy_on_duplication {
-  raises_error,
-  returns_first,
-  returns_last,
-};
-
 // -------- Reflection with access control (P3547) --------
 
 consteval auto current_context() {
@@ -25,24 +20,18 @@ consteval auto unchecked_context() {
   return std::meta::access_context::unchecked();
 }
 
-#define REFLECT_CPP26_MEMBER_QUERY_WITH_ACCESS_CONTEXT_FOR_EACH(F) \
-  F(members)                 \
-  F(bases)                   \
-  F(static_data_members)     \
-  F(nonstatic_data_members)
-
 /**
  * Note: You need to be cautious when trying to cache member information
  * with constexpr variables. For example:
- *   constexpr auto ns_member_count =
+ *   constexpr auto std_member_count =
  *     all_direct_members_of(^^std).size(); // direct members of namespace std
  *
  * The actual values may be inconsistent if:
- * (1) ODR violation happens: ns_member_count is instantiated in multiple
- *     translation units with different subsets of namespace ns visible;
+ * (1) ODR violation happens: std_member_count is instantiated in multiple
+ *     translation units with different visible subsets of namespace std;
  * (2) Context differs.
  */
-#define REFLECT_CPP26_DEFINE_MEMBER_QUERY_WITH_ACCESS_CONTEXT(fn)         \
+#define REFLECT_CPP26_DEFINE_QUERY_WITH_ACCESS_CONTEXT(fn)                \
   /* Gets all direct members that are accessible in current scope */      \
   consteval auto currently_accessible_##fn##_of(std::meta::info a) {      \
     return std::meta::fn##_of(a, reflect_cpp26::current_context());       \
@@ -57,11 +46,12 @@ consteval auto unchecked_context() {
   }
 
 // Expanded dfinitions see above
-REFLECT_CPP26_MEMBER_QUERY_WITH_ACCESS_CONTEXT_FOR_EACH(
-  REFLECT_CPP26_DEFINE_MEMBER_QUERY_WITH_ACCESS_CONTEXT)
+REFLECT_CPP26_DEFINE_QUERY_WITH_ACCESS_CONTEXT(members)
+REFLECT_CPP26_DEFINE_QUERY_WITH_ACCESS_CONTEXT(bases)
+REFLECT_CPP26_DEFINE_QUERY_WITH_ACCESS_CONTEXT(static_data_members)
+REFLECT_CPP26_DEFINE_QUERY_WITH_ACCESS_CONTEXT(nonstatic_data_members)
 
-#undef REFLECT_CPP26_DEFINE_MEMBER_QUERY_WITH_ACCESS_CONTEXT
-#undef REFLECT_CPP26_MEMBER_QUERY_WITH_ACCESS_CONTEXT_FOR_EACH
+#undef REFLECT_CPP26_DEFINE_QUERY_WITH_ACCESS_CONTEXT
 
 // -------- Reflecting pointers-to-member --------
 
@@ -70,6 +60,7 @@ REFLECT_CPP26_MEMBER_QUERY_WITH_ACCESS_CONTEXT_FOR_EACH(
  * reflect_pointer_to_member(&Foo::bar) == ^Foo::bar
  */
 template <class T, class Member>
+  requires (!std::is_function_v<Member>)
 consteval auto reflect_pointer_to_member(Member T::*mptr) -> std::meta::info
 {
   // todo: Is O(1) lookup possible?
@@ -84,7 +75,7 @@ consteval auto reflect_pointer_to_member(Member T::*mptr) -> std::meta::info
       return true; // Continues
     });
   if (std::meta::info{} == res) {
-    throw "Not found.";
+    compile_error("Not found.");
   }
   return res;
 }
@@ -104,8 +95,7 @@ consteval auto extract(constant<V>) {
 /**
  * Equivalent to extract<T>(substitute(templ, {templ_params})).
  */
-template <class T, class... Args>
-  requires (std::is_same_v<Args, std::meta::info> && ...)
+template <class T, std::same_as<std::meta::info>... Args>
 consteval T extract_substituted(std::meta::info templ, Args... templ_params)
 {
   return std::meta::extract<T>(
@@ -116,16 +106,14 @@ consteval T extract_substituted(std::meta::info templ, Args... templ_params)
  * Equivalent to extract<bool>(substitute(templ, {templ_params})).
  * Frequently used with type traits and concepts.
  */
-template <class... Args>
-  requires (std::is_same_v<Args, std::meta::info> && ...)
+template <std::same_as<std::meta::info>... Args>
 consteval bool extract_bool(std::meta::info templ, Args... templ_params)
 {
   return std::meta::extract<bool>(
     std::meta::substitute(templ, {templ_params...}));
 }
 
-template <class MetaRange>
-  requires (std::ranges::input_range<MetaRange>)
+template <input_range_of<std::meta::info> MetaRange>
 consteval bool extract_bool(std::meta::info templ, MetaRange&& templ_params)
 {
   return std::meta::extract<bool>(
@@ -133,8 +121,7 @@ consteval bool extract_bool(std::meta::info templ, MetaRange&& templ_params)
 }
 // -------- Substitution helpers --------
 
-template <class... Args>
-  requires (std::is_same_v<Args, std::meta::info> && ...)
+template <std::same_as<std::meta::info>... Args>
 consteval auto substitute(std::meta::info templ, Args... templ_params)
   -> std::meta::info {
   return std::meta::substitute(templ, {templ_params...});
