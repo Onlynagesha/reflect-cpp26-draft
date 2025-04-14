@@ -43,7 +43,8 @@ constexpr auto constant_tuple = std::tuple{
 };
 
 struct get_from_constant_tuple_t {
-  static constexpr auto operator()(auto ec) {
+  static constexpr auto operator()(auto ec)
+  {
     constexpr auto I = std::to_underlying(ec.value);
     return get<I>(constant_tuple);
   }
@@ -123,7 +124,8 @@ static_assert(std::is_same_v<decltype(get_res_8), const wchar_t>);
 static_assert(get_res_8 == '\0');
 
 struct get_from_non_constant_tuple_t {
-  static constexpr auto& operator()(auto* tuple, auto ec) {
+  static constexpr auto& operator()(auto* tuple, auto ec)
+  {
     constexpr auto I = std::to_underlying(ec.value);
     return get<I>(*tuple);
   }
@@ -136,7 +138,8 @@ enum class array_index {
   three = 3,
 };
 
-TEST(EnumSwitch, Dereference) {
+TEST(EnumSwitch, Dereference)
+{
   auto array = std::array{"abc"s, "def"s, "ghi"s, "jkl"s};
   auto default_str = "<n/a>"s;
 

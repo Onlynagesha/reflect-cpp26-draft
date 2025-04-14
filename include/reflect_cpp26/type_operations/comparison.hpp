@@ -4,9 +4,9 @@
 #include <reflect_cpp26/type_traits/function_types.hpp>
 #include <reflect_cpp26/type_traits/reduction.hpp>
 #include <reflect_cpp26/type_traits/tuple_like_types.hpp>
+#include <reflect_cpp26/utils/functional.hpp>
 #include <reflect_cpp26/utils/meta_tuple.hpp>
 #include <reflect_cpp26/utils/ranges.hpp>
-#include <reflect_cpp26/utils/utility.hpp>
 
 namespace reflect_cpp26 {
 namespace impl {
@@ -260,19 +260,28 @@ constexpr auto generic_compare_three_way = generic_compare_three_way_t{};
 
 template <class T, class U>
 constexpr auto is_generic_equal_comparable_v =
-  requires (const T& t, const U& u) { generic_equal(t, u); };
+  requires (const T& t, const U& u) {
+    generic_equal(t, u);
+    generic_equal(u, t);
+  };
 
 template <class T, class U>
 constexpr auto is_generic_not_equal_comparable_v =
-  requires (const T& t, const U& u) { generic_not_equal(t, u); };
+  requires (const T& t, const U& u) {
+    generic_not_equal(t, u);
+    generic_not_equal(u, t);
+  };
 
 template <class T, class U>
-constexpr auto is_generic_compare_three_way_comparable_v =
-  requires (const T& t, const U& u) { generic_compare_three_way(t, u); };
+constexpr auto is_generic_three_way_comparable_v =
+  requires (const T& t, const U& u) {
+    generic_compare_three_way(t, u);
+    generic_compare_three_way(u, t);
+  };
 
 REFLECT_CPP26_UTILITY_MAKE_COMPARISON_TRAITS_TYPE(generic_equal)
 REFLECT_CPP26_UTILITY_MAKE_COMPARISON_TRAITS_TYPE(generic_not_equal)
-REFLECT_CPP26_UTILITY_MAKE_COMPARISON_TRAITS_TYPE(generic_compare_three_way)
+REFLECT_CPP26_UTILITY_MAKE_COMPARISON_TRAITS_TYPE(generic_three_way)
 } // namespace reflect_cpp26
 
 #endif // REFLECT_CPP26_TYPE_OPERATIONS_COMPARISON_HPP

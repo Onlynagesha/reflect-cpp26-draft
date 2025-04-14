@@ -8,8 +8,7 @@
 #include <utility>
 
 namespace reflect_cpp26 {
-template <class E>
-  requires (std::is_enum_v<E>)
+template <enum_type E>
 using enum_entry_t = std::pair<std::remove_cv_t<E>, std::string_view>;
 
 namespace impl {
@@ -31,8 +30,7 @@ constexpr auto enum_entries_v = make_enum_entries<E, Order>();
 /**
  * Gets the list of (value, name) pairs.
  */
-template <class E, enum_entry_order Order = enum_entry_order::original>
-  requires (std::is_enum_v<E>)
+template <enum_type E, enum_entry_order Order = enum_entry_order::original>
 constexpr auto enum_entries() -> std::span<const enum_entry_t<E>>
 {
   return impl::enum_entries_v<std::remove_cv_t<E>, Order>;
@@ -41,8 +39,7 @@ constexpr auto enum_entries() -> std::span<const enum_entry_t<E>>
 /**
  * Gets the i-th (value, name) pair.
  */
-template <class E, enum_entry_order Order = enum_entry_order::original>
-  requires (std::is_enum_v<E>)
+template <enum_type E, enum_entry_order Order = enum_entry_order::original>
 constexpr auto enum_entry(size_t index) -> enum_entry_t<E>
 {
   constexpr auto entries = enum_entries<E, Order>();

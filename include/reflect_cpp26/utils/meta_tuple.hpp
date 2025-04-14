@@ -41,15 +41,8 @@ struct meta_tuple {
 
 private:
   static constexpr auto get_nth_field(size_t n) {
-    return all_direct_nonstatic_data_members_of(^^underlying_type)[n];
+    return all_direct_nsdm_of(^^underlying_type)[n];
   }
-
-  // Note: Requirements moved to private delegated constructor
-  // to prevent compile error: "satisfaction of constraint
-  // 'is_tuple_like_of_elements_v<TupleLike, Args...>' depends on itself"
-  template <tuple_like_of_elements<Args...> TupleLike, size_t... Is>
-  constexpr meta_tuple(TupleLike&& tuple, std::index_sequence<Is...>)
-    : values{tuple_get<Is>(std::forward<TupleLike>(tuple))...} {}
 
 public:
   constexpr meta_tuple() = default;
@@ -57,18 +50,11 @@ public:
   // cvref dropped during CTAD
   constexpr meta_tuple(const Args&... args) : values{args...} {}
 
-  template <class TupleLike>
-    /* requires (is_tuple_like_of_elements_v<TupleLike, Args...>) */
-  constexpr meta_tuple(TupleLike&& tuple)
-    : meta_tuple(std::forward<TupleLike>(tuple),
-                 std::make_index_sequence<tuple_size>{}) {}
-
-  template <class TupleLike>
-    requires (is_tuple_like_of_elements_v<TupleLike, Args...>)
+  template <tuple_like_of<Args...> TupleLike>
   constexpr auto& operator=(TupleLike&& tuple)
   {
     constexpr auto members =
-      all_direct_nonstatic_data_members_of(^^underlying_type);
+      all_direct_nsdm_of(^^underlying_type);
     REFLECT_CPP26_EXPAND(members).for_each(
       [this, &tuple](auto index, auto member) {
         values.[:member:] = tuple_get<index>(std::forward<TupleLike>(tuple));

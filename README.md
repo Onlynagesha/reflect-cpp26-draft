@@ -21,11 +21,29 @@ LD_LIBRARY_PATH=<path-to-libc++> xmake run --group=tests/**
   * IOStream operators
   * Bitwise operators
   * containers
+  * Case-insensitive enum name comparison
+* Validators
+  * (see the table below)
+  * Recursive validation (see the example below)
+  * String validators with case-insensitive comparison
+  * Validation on invariant relation between multiple members
+  * Non-intrusive validator annotation
 * Improvements to `constant`:
   * `map`, `filter` with index
   * `index_of`, `last_index_of`, `includes` with start index
 * `tests/type_traits/class_types/test_flattened_accessible_nsdm_X.cpp`
   * Class types with virtual member functions
+
+Validators to be implemented:
+| Name | Implemented | Tested |
+| :--- | :---------: | :----: |
+| `starts_with` | | |
+| `ends_with` | | |
+| `contains` | | |
+| `matches_regex` | | |
+| `substr_matches_regex` | | |
+| `has_subsequence` | | |
+| `is_subsequence_of` | | |
 
 # Test Cases Failed Due to Compiler Bug
 

@@ -90,10 +90,8 @@ constexpr auto enum_switch_value(Func&& func, E value, T init)
  * default:
  *   return std::nullopt; // Or no-op if T is void
  */
-template <class T = void, class E, class Func>
-  requires (std::is_enum_v<E>
-    && !std::is_reference_v<T>
-    && impl::enum_switch_is_invocable_r_v<T, E, Func>)
+template <non_reference_type T = void, enum_type E, class Func>
+  requires (impl::enum_switch_is_invocable_r_v<T, E, Func>)
 constexpr auto enum_switch(Func&& func, E value)
 {
   if constexpr (std::is_same_v<T, void>) {
@@ -113,9 +111,8 @@ constexpr auto enum_switch(Func&& func, E value)
  * default:
  *   return init;
  */
-template <class T, class E, class Func>
-  requires (std::is_enum_v<E>
-    && impl::enum_switch_is_invocable_r_v<std::decay_t<T>, E, Func>)
+template <class T, enum_type E, class Func>
+  requires (impl::enum_switch_is_invocable_r_v<std::decay_t<T>, E, Func>)
 constexpr auto enum_switch(Func&& func, E value, T&& default_value)
 {
   return impl::enum_switch_value<std::decay_t<T>>(
@@ -133,9 +130,8 @@ constexpr auto enum_switch(Func&& func, E value, T&& default_value)
  *   return init as ResultT;
  * ResultT is common type of init and func(constant<E::valueN>{})...
  */
-template <class T, class E, class Func>
-  requires (std::is_enum_v<E>
-    && impl::enum_switch_is_invocable_r_v<void, E, Func>)
+template <class T, enum_type E, class Func>
+  requires (impl::enum_switch_is_invocable_r_v<void, E, Func>)
 constexpr auto enum_switch_to_common(Func&& func, E value, T&& default_value)
 {
   using ResultT = std::common_type_t<

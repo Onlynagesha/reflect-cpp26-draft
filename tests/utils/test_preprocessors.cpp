@@ -1,19 +1,19 @@
-#include <gtest/gtest.h>
+#include "test_options.hpp"
 #include <reflect_cpp26/utils/preprocessors.h>
 
 TEST(UtilsPreprocessors, NArgs)
 {
-  EXPECT_EQ(1, REFLECT_CPP26_MACRO_N_ARGS(x));
-  EXPECT_EQ(2, REFLECT_CPP26_MACRO_N_ARGS(x, y));
-  EXPECT_EQ(6, REFLECT_CPP26_MACRO_N_ARGS(x, y, z, a, b, c));
+  EXPECT_EQ_STATIC(1, REFLECT_CPP26_MACRO_N_ARGS(x));
+  EXPECT_EQ_STATIC(2, REFLECT_CPP26_MACRO_N_ARGS(x, y));
+  EXPECT_EQ_STATIC(6, REFLECT_CPP26_MACRO_N_ARGS(x, y, z, a, b, c));
 
-  EXPECT_EQ(0, REFLECT_CPP26_MACRO_N_ARGS());
-  EXPECT_EQ(2, REFLECT_CPP26_MACRO_N_ARGS(x, ));
-  EXPECT_EQ(2, REFLECT_CPP26_MACRO_N_ARGS(, y));
-  EXPECT_EQ(2, REFLECT_CPP26_MACRO_N_ARGS(,));
-  EXPECT_EQ(8, REFLECT_CPP26_MACRO_N_ARGS(, , , , , , ,)); // 7 commas
+  EXPECT_EQ_STATIC(0, REFLECT_CPP26_MACRO_N_ARGS());
+  EXPECT_EQ_STATIC(2, REFLECT_CPP26_MACRO_N_ARGS(x, ));
+  EXPECT_EQ_STATIC(2, REFLECT_CPP26_MACRO_N_ARGS(, y));
+  EXPECT_EQ_STATIC(2, REFLECT_CPP26_MACRO_N_ARGS(,));
+  EXPECT_EQ_STATIC(8, REFLECT_CPP26_MACRO_N_ARGS(, , , , , , ,)); // 7 commas
 
-  EXPECT_EQ(64, REFLECT_CPP26_MACRO_N_ARGS(
+  EXPECT_EQ_STATIC(64, REFLECT_CPP26_MACRO_N_ARGS(
     0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
     0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
     0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
@@ -24,11 +24,11 @@ TEST(UtilsPreprocessors, NArgs)
 
   using matrix_double_4x4 = std::array<std::array<double, 4>, 4>;
   // A common misusage in C++: Macro arguments that contain commas
-  EXPECT_EQ(3,
+  EXPECT_EQ_STATIC(3, // _____ | -----------a------------ |, b-, c-
     REFLECT_CPP26_MACRO_N_ARGS(std::array<std::array<double, 4>, 4>));
-  EXPECT_EQ(1, // ____________ | ------------- braced ------------- |
+  EXPECT_EQ_STATIC(1, // _____ | ------------- braced ------------- |
     REFLECT_CPP26_MACRO_N_ARGS((std::array<std::array<double, 4>, 4>)));
-  EXPECT_EQ(1,
+  EXPECT_EQ_STATIC(1,
     REFLECT_CPP26_MACRO_N_ARGS(matrix_double_4x4));
 }
 
@@ -70,9 +70,9 @@ TEST(UtilsPreprocessors, ForEach)
   EXPECT_EQ(0, sum);
 #undef INCREMENT
 
-  EXPECT_EQ("ten", demo_type<10>::value);
-  EXPECT_EQ("twelve", demo_type<20>::value);
-  EXPECT_EQ("thirty", demo_type<30>::value);
-  EXPECT_EQ("fourty", demo_type<40>::value);
-  EXPECT_EQ("<default>", demo_type<0>::value);
+  EXPECT_EQ_STATIC("ten", demo_type<10>::value);
+  EXPECT_EQ_STATIC("twelve", demo_type<20>::value);
+  EXPECT_EQ_STATIC("thirty", demo_type<30>::value);
+  EXPECT_EQ_STATIC("fourty", demo_type<40>::value);
+  EXPECT_EQ_STATIC("<default>", demo_type<0>::value);
 }

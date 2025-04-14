@@ -3,6 +3,7 @@
 
 #include <reflect_cpp26/enum/impl/enum_hash_entry_search.hpp>
 #include <reflect_cpp26/enum/impl/enum_value_entry_search.hpp>
+#include <reflect_cpp26/utils/concepts.hpp>
 #include <reflect_cpp26/utils/utility.hpp>
 
 namespace reflect_cpp26 {
@@ -10,8 +11,7 @@ namespace reflect_cpp26 {
  * Returns the value of enum type E whose name is exactly str,
  * or std::nullopt if such value does not exist in E.
  */
-template <class E>
-  requires (std::is_enum_v<E>)
+template <enum_type E>
 constexpr auto enum_cast(std::string_view str)
   -> std::optional<std::remove_cv_t<E>>
 {
@@ -26,8 +26,7 @@ constexpr auto enum_cast(std::string_view str)
  * Casts the given integral value to enum type E
  * if value belongs to entries of E, or std::nullopt otherwise.
  */
-template <class E, class I>
-  requires (std::is_enum_v<E> && std::is_integral_v<I>)
+template <enum_type E, std::integral I>
 constexpr auto enum_cast(I value) -> std::optional<std::remove_cv_t<E>>
 {
   using UnderlyingT = std::underlying_type_t<E>;

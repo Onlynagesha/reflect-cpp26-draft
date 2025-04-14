@@ -37,7 +37,7 @@ void force_write_ref_by_offset(void* base, uintptr_t offset, T value)
 TEST(TypeTraitsClassTypes, NSDMListGroup2References)
 {
   constexpr auto ref_members =
-    rfl::flattened_accessible_nonstatic_data_members_v<references_t>;
+    rfl::public_flattened_nsdm_v<references_t>;
   static_assert(ref_members.size() == 4);
   auto expected_offsets = std::array{
     0zU, sizeof(void*), sizeof(void*) * 2, sizeof(void*) * 3};
@@ -127,7 +127,7 @@ void force_write_bf_by_offset(
 TEST(TypeTraitsClassTypes, NSDMListGroup2BitFields)
 {
   constexpr auto members =
-    rfl::flattened_accessible_nonstatic_data_members_v<bit_fields_B_t>;
+    rfl::public_flattened_nsdm_v<bit_fields_B_t>;
   static_assert(members.size() == 8);
 
   auto bf = bit_fields_B_t{};

@@ -25,8 +25,7 @@ constexpr auto enum_values() -> std::span<const std::remove_cv_t<E>>
 /**
  * Gets the i-th enum value.
  */
-template <class E, enum_entry_order Order = enum_entry_order::original>
-  requires (std::is_enum_v<E>)
+template <enum_type E, enum_entry_order Order = enum_entry_order::original>
 constexpr auto enum_value(size_t index) -> std::remove_cv_t<E>
 {
   constexpr auto values = enum_values<E, Order>();
@@ -36,7 +35,7 @@ constexpr auto enum_value(size_t index) -> std::remove_cv_t<E>
 /**
  * Gets the list of enum values as constant<values...>.
  */
-template <class E, enum_entry_order Order = enum_entry_order::original>
+template <enum_type E, enum_entry_order Order = enum_entry_order::original>
 constexpr auto enum_value_constants() /* -> constant<e1, e2...> */
 {
   return impl::enum_values_v<std::remove_cv_t<E>, Order>;
@@ -45,7 +44,7 @@ constexpr auto enum_value_constants() /* -> constant<e1, e2...> */
 /**
  * Gets the i-th enum value as constant<value>.
  */
-template <size_t I, class E,
+template <size_t I, enum_type E,
           enum_entry_order Order = enum_entry_order::original>
 constexpr auto enum_value_constant() /* -> constant<ei> */
 {

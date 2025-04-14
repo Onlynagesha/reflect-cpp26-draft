@@ -8,8 +8,7 @@ namespace reflect_cpp26 {
  * Gets the index of given enum value in specified order.
  * Returns npos if not value is not found.
  */
-template <enum_entry_order Order = enum_entry_order::original, class E>
-  requires (std::is_enum_v<E>)
+template <enum_entry_order Order = enum_entry_order::original, enum_type E>
 constexpr auto enum_index(E value) -> size_t
 {
   const auto* pos = impl::enum_value_search(value);

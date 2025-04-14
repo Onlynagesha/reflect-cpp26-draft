@@ -12,7 +12,6 @@ struct function_trait_flags {
   bool is_rvalue_reference;
   bool is_noexcept;
 
-  constexpr auto operator<=>(const function_trait_flags&) const = default;
   constexpr bool operator==(const function_trait_flags&) const = default;
 };
 
@@ -91,12 +90,6 @@ REFLECT_CPP26_SPECIALIZE_FUNCTION_TRAITS_REF(noexcept, .is_noexcept = true);
 #undef REFLECT_CPP26_SPECIALIZE_FUNCTION_TRAITS_REF
 
 namespace impl {
-#define REFLECT_CPP26_TO_FUNCTION_POINTER_FOR_EACH(F) \
-  F((Args...))                                        \
-  F((Args..., ...))                                   \
-  F((Args...) noexcept)                               \
-  F((Args..., ...) noexcept)
-
 template <class T>
 struct to_function_pointer {}; // type undefined
 
@@ -107,19 +100,19 @@ struct to_function_pointer {}; // type undefined
   };                                                                  \
   template <class Ret, class... Args>                                 \
   struct to_function_pointer<Ret (*) SignatureSuffix> {               \
-    using type= Ret (*)SignatureSuffix;                               \
+    using type = Ret (*) SignatureSuffix;                             \
   };
 
-REFLECT_CPP26_TO_FUNCTION_POINTER_FOR_EACH(
-  REFLECT_CPP26_SPECIALIZE_TO_FUNCTION_POINTER)
+REFLECT_CPP26_SPECIALIZE_TO_FUNCTION_POINTER((Args...))
+REFLECT_CPP26_SPECIALIZE_TO_FUNCTION_POINTER((Args..., ...))
+REFLECT_CPP26_SPECIALIZE_TO_FUNCTION_POINTER((Args...) noexcept)
+REFLECT_CPP26_SPECIALIZE_TO_FUNCTION_POINTER((Args..., ...) noexcept)
 
-#undef REFLECT_CPP26_TO_FUNCTION_POINTER_FOR_EACH
 #undef REFLECT_CPP26_SPECIALIZE_TO_FUNCTION_POINTER
 
 template <class T>
 struct to_function {
-  static constexpr auto enabled = false;
-  // type undefined
+  static constexpr auto enabled = false; // type undefined
 };
 
 template <class T>
@@ -159,7 +152,7 @@ constexpr auto is_convertible_to_function_pointer_v =
  * In all other cases, the program is ill-formed.
  */
 template <class T>
-  requires (is_convertible_to_function_pointer_v<std::remove_cvref_t<T>>)
+  requires (is_convertible_to_function_pointer_v<T>)
 using to_function_pointer_t =
   typename impl::to_function_pointer<std::remove_cvref_t<T>>::type;
 
@@ -178,7 +171,7 @@ constexpr auto is_convertible_to_function_v =
  * Otherwise, the program is ill-formed.
  */
 template <class T>
-  requires (is_convertible_to_function_v<std::remove_cvref_t<T>>)
+  requires (is_convertible_to_function_v<T>)
 using to_function_t = typename impl::to_function<std::remove_cvref_t<T>>::type;
 } // namespace reflect_cpp26
 

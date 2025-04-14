@@ -2,7 +2,7 @@
 #define REFLECT_CPP26_ENUM_IMPL_HASH_COLLISION_CHECK_HPP
 
 #include <reflect_cpp26/enum/enum_for_each.hpp>
-#include <reflect_cpp26/utils/string_hash.h>
+#include <reflect_cpp26/utils/string_hash.hpp>
 #include <algorithm>
 
 namespace reflect_cpp26::impl {

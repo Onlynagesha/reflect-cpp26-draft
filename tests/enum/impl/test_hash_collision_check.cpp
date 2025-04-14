@@ -1,6 +1,6 @@
-#include <gtest/gtest.h>
+#include "enum/test_cases.hpp"
+#include "test_options.hpp"
 #include <reflect_cpp26/enum/impl/hash_collision_check.hpp>
-#include "../test_cases.hpp"
 
 using reflect_cpp26::impl::enum_name_has_hash_collision_v;
 

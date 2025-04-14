@@ -1,6 +1,6 @@
-#include <gtest/gtest.h>
+#include "test_options.hpp"
 #include <reflect_cpp26/type_traits.hpp>
-#include <reflect_cpp26/utils/utility.hpp>
+#include <reflect_cpp26/utils/functional.hpp>
 
 namespace rfl = reflect_cpp26;
 
@@ -15,29 +15,29 @@ private:
 // No inheritance, unary predicate
 static_assert(rfl::all_of_direct_memberwise_v<
   std::is_arithmetic, foo_t>);
-static_assert(! rfl::all_of_direct_memberwise_v<
+static_assert(NOT rfl::all_of_direct_memberwise_v<
   std::is_integral, foo_t>);
 static_assert(rfl::all_of_flattened_memberwise_v<
   std::is_arithmetic, foo_t>);
-static_assert(! rfl::all_of_flattened_memberwise_v<
+static_assert(NOT rfl::all_of_flattened_memberwise_v<
   std::is_integral, foo_t>);
 
 static_assert(rfl::any_of_direct_memberwise_v<
   std::is_floating_point, foo_t>);
-static_assert(! rfl::any_of_direct_memberwise_v<
+static_assert(NOT rfl::any_of_direct_memberwise_v<
   std::is_reference, foo_t>);
 static_assert(rfl::any_of_flattened_memberwise_v<
   std::is_floating_point, foo_t>);
-static_assert(! rfl::any_of_flattened_memberwise_v<
+static_assert(NOT rfl::any_of_flattened_memberwise_v<
   std::is_reference, foo_t>);
 
 static_assert(rfl::none_of_direct_memberwise_v<
   std::is_pointer, foo_t>);
-static_assert(! rfl::none_of_direct_memberwise_v<
+static_assert(NOT rfl::none_of_direct_memberwise_v<
   std::is_integral, foo_t>);
 static_assert(rfl::none_of_flattened_memberwise_v<
   std::is_pointer, foo_t>);
-static_assert(! rfl::none_of_flattened_memberwise_v<
+static_assert(NOT rfl::none_of_flattened_memberwise_v<
   std::is_integral, foo_t>);
 
 struct identifier_length_is_odd {
@@ -62,29 +62,29 @@ struct identifier_length_compare {
 // No inheritance, unary predicate(std::meta::info)
 static_assert(rfl::all_of_direct_memberwise_meta_v<
   identifier_length_is_odd, foo_t>);
-static_assert(! rfl::all_of_direct_memberwise_meta_v<
+static_assert(NOT rfl::all_of_direct_memberwise_meta_v<
   identifier_length_compare<rfl::less_equal_t, 4>, foo_t>);
 static_assert(rfl::all_of_flattened_memberwise_meta_v<
   identifier_length_is_odd, foo_t>);
-static_assert(! rfl::all_of_flattened_memberwise_meta_v<
+static_assert(NOT rfl::all_of_flattened_memberwise_meta_v<
   identifier_length_compare<rfl::less_equal_t, 4>, foo_t>);
 
 static_assert(rfl::any_of_direct_memberwise_meta_v<
   identifier_length_compare<rfl::less_equal_t, 2>, foo_t>);
-static_assert(! rfl::any_of_direct_memberwise_meta_v<
+static_assert(NOT rfl::any_of_direct_memberwise_meta_v<
   identifier_length_is_even, foo_t>);
 static_assert(rfl::any_of_flattened_memberwise_meta_v<
   identifier_length_compare<rfl::less_equal_t, 2>, foo_t>);
-static_assert(! rfl::any_of_flattened_memberwise_meta_v<
+static_assert(NOT rfl::any_of_flattened_memberwise_meta_v<
   identifier_length_is_even, foo_t>);
 
 static_assert(rfl::none_of_direct_memberwise_meta_v<
   identifier_length_is_even, foo_t>);
-static_assert(! rfl::none_of_direct_memberwise_meta_v<
+static_assert(NOT rfl::none_of_direct_memberwise_meta_v<
   identifier_length_compare<rfl::greater_t, 2>, foo_t>);
 static_assert(rfl::none_of_flattened_memberwise_meta_v<
   identifier_length_is_even, foo_t>);
-static_assert(! rfl::none_of_flattened_memberwise_meta_v<
+static_assert(NOT rfl::none_of_flattened_memberwise_meta_v<
   identifier_length_compare<rfl::greater_t, 2>, foo_t>);
 
 struct bar_t {
@@ -115,17 +115,17 @@ struct actual_offset_is_odd {
 // No inheritance, unary predicate(reflect_cpp26::flattened_data_member_spec)
 static_assert(rfl::all_of_flattened_memberwise_meta_v<
   type_identifier_length_is_even, bar_t>);
-static_assert(! rfl::all_of_flattened_memberwise_meta_v<
+static_assert(NOT rfl::all_of_flattened_memberwise_meta_v<
   actual_offset_is_odd, bar_t>);
 
 static_assert(rfl::any_of_flattened_memberwise_meta_v<
   actual_offset_is_odd, bar_t>);
-static_assert(! rfl::any_of_flattened_memberwise_meta_v<
+static_assert(NOT rfl::any_of_flattened_memberwise_meta_v<
   type_identifier_length_is_odd, bar_t>);
 
 static_assert(rfl::none_of_flattened_memberwise_meta_v<
   type_identifier_length_is_odd, bar_t>);
-static_assert(! rfl::none_of_flattened_memberwise_meta_v<
+static_assert(NOT rfl::none_of_flattened_memberwise_meta_v<
   actual_offset_is_odd, bar_t>);
 
 struct baz_t : foo_t, bar_t {
@@ -136,10 +136,10 @@ struct baz_t : foo_t, bar_t {
 // Inheritance, unary predicate
 static_assert(rfl::all_of_direct_memberwise_v<
   std::is_integral, baz_t>);
-static_assert(! rfl::all_of_flattened_memberwise_v<
+static_assert(NOT rfl::all_of_flattened_memberwise_v<
   std::is_integral, baz_t>);
 
-static_assert(! rfl::any_of_direct_memberwise_v<
+static_assert(NOT rfl::any_of_direct_memberwise_v<
   std::is_floating_point, baz_t>);
 static_assert(rfl::any_of_flattened_memberwise_v<
   std::is_floating_point, baz_t>);
@@ -150,14 +150,14 @@ static_assert(rfl::none_of_flattened_memberwise_v<
   std::is_pointer, baz_t>);
 static_assert(rfl::none_of_direct_memberwise_v<
   std::is_floating_point, baz_t>);
-static_assert(! rfl::none_of_flattened_memberwise_v<
+static_assert(NOT rfl::none_of_flattened_memberwise_v<
   std::is_floating_point, baz_t>);
 
-static_assert(! rfl::any_of_direct_memberwise_meta_v<
+static_assert(NOT rfl::any_of_direct_memberwise_meta_v<
   identifier_length_compare<rfl::less_t, 3>, baz_t>);
 static_assert(rfl::any_of_flattened_memberwise_meta_v<
   identifier_length_compare<rfl::less_t, 3>, baz_t>);
-static_assert(! rfl::none_of_flattened_memberwise_meta_v<
+static_assert(NOT rfl::none_of_flattened_memberwise_meta_v<
   actual_offset_is_odd, baz_t>);
 
 struct qux_A_t {
@@ -222,7 +222,7 @@ static_assert(rfl::all_of_flattened_memberwise_meta_v<
 
 static_assert(rfl::any_of_flattened_memberwise_meta_v<
   all_are_non_arrays_by_spec, qux_B_t, qux_C_t>);
-static_assert(! rfl::all_of_flattened_memberwise_meta_v<
+static_assert(NOT rfl::all_of_flattened_memberwise_meta_v<
   all_are_non_arrays_by_spec, qux_B_t, qux_C_t>);
 static_assert(rfl::all_of_flattened_memberwise_meta_v<
   all_are_non_arrays_by_spec, qux_A_t, qux_B_t, qux_C_t>);

@@ -4,6 +4,7 @@
 #include <reflect_cpp26/utils/config.h>
 #include <algorithm>
 #include <compare>
+#include <concepts>
 #include <format>
 #include <iterator>
 #include <string>
@@ -47,6 +48,9 @@ public:
 
   static consteval auto from_literal(const CharT* literal)
   {
+    if (literal == nullptr) {
+      compile_error("String literal must not be null pointer.");
+    }
     auto res = meta_basic_string_view{};
     res.head = literal;
     res.tail = std::ranges::find(literal, std::unreachable_sentinel, '\0');
@@ -136,8 +140,7 @@ public:
     return res;
   }
 
-  template <class RhsType>
-    requires (std::is_same_v<meta_basic_string_view<CharT>, RhsType>)
+  template <std::same_as<meta_basic_string_view<CharT>> RhsType>
   constexpr auto operator<=>(RhsType rhs) const
     -> std::strong_ordering
   {
@@ -145,8 +148,7 @@ public:
       head, tail, rhs.head, rhs.tail);
   }
 
-  template <class RhsType>
-    requires (std::is_same_v<meta_basic_string_view<CharT>, RhsType>)
+  template <std::same_as<meta_basic_string_view<CharT>> RhsType>
   constexpr bool operator==(RhsType rhs) const {
     return std::ranges::equal(head, tail, rhs.head, rhs.tail);
   }
@@ -166,6 +168,9 @@ public:
 
   constexpr auto operator<=>(const CharT* rhs) const -> std::strong_ordering
   {
+    if (rhs == nullptr) {
+      return size() <=> 0; // nullptr as empty string
+    }
     const auto* rhs_tail = std::ranges::find(
       rhs, std::unreachable_sentinel, '\0');
     return std::lexicographical_compare_three_way(head, tail, rhs, rhs_tail);
@@ -173,6 +178,9 @@ public:
 
   constexpr bool operator==(const CharT* rhs) const
   {
+    if (rhs == nullptr) {
+      return size() == 0; // nullptr as empty string
+    }
     const auto* rhs_tail = std::ranges::find(
       rhs, std::unreachable_sentinel, '\0');
     return std::ranges::equal(head, tail, rhs, rhs_tail);

@@ -3,6 +3,7 @@
 
 #include <reflect_cpp26/enum/enum_count.hpp>
 #include <reflect_cpp26/enum/enum_entry_order.hpp>
+#include <reflect_cpp26/utils/concepts.hpp>
 #include <reflect_cpp26/utils/expand.hpp>
 #include <algorithm>
 #include <ranges>
@@ -100,7 +101,7 @@ constexpr auto enum_meta_entries_v<E, enum_entry_order::by_name> =
 /**
  * Gets the reflector list of enumerators in E with given order.
  */
-template <class E, enum_entry_order Order = enum_entry_order::original>
+template <enum_type E, enum_entry_order Order = enum_entry_order::original>
 consteval auto enum_meta_entries() /* constants<std::meta::info...> */
 {
   return impl::enum_meta_entries_v<std::remove_cv_t<E>, Order>;
@@ -109,7 +110,7 @@ consteval auto enum_meta_entries() /* constants<std::meta::info...> */
 /**
  * Gets the i-th reflector of enumerators in E with given order.
  */
-template <class E, enum_entry_order Order = enum_entry_order::original>
+template <enum_type E, enum_entry_order Order = enum_entry_order::original>
 consteval auto enum_meta_entry(size_t index) -> std::meta::info
 {
   constexpr auto entries = enum_meta_entries<E, Order>();

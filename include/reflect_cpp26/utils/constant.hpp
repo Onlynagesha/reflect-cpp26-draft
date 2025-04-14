@@ -19,36 +19,19 @@ struct constant;
 constexpr auto npos = std::numeric_limits<size_t>::max();
 
 namespace impl {
-template <auto U, auto V>
-constexpr auto constants_are_eq_comparible_v = requires { U == V; };
-
-template <auto U, auto V>
-constexpr auto constants_are_equal_v = false;
-
-template <auto U, auto V>
-  requires (constants_are_eq_comparible_v<U, V>)
-constexpr auto constants_are_equal_v<U, V> = (U == V);
-
-template <auto U, auto V>
-  requires (!constants_are_eq_comparible_v<U, V>
-          && constants_are_eq_comparible_v<V, U>)
-constexpr auto constants_are_equal_v<U, V> = (V == U);
-
-// Specialization for tag types.
-template <auto U, auto V>
-  requires (!constants_are_eq_comparible_v<U, V>
-         && !constants_are_eq_comparible_v<V, U>
-         && std::is_empty_v<decltype(U)>
-         && std::is_empty_v<decltype(V)>)
-constexpr auto constants_are_equal_v<U, V> =
-  std::is_same_v<decltype(U), decltype(V)>;
-
 template <template <auto...> class Derived, auto... Vs>
+  requires (!is_nontype_template_instance_of_v<decltype(Vs), Derived> && ...)
 struct constant_base {
 private:
-  static constexpr auto has_nested_constant =
-    (is_nontype_template_instance_of_v<decltype(Vs), Derived> || ...);
-  static_assert(!has_nested_constant, "Vs... shall not contain constant<...>.");
+  template <size_t I>
+  static constexpr auto get_ith() {
+    return Vs...[I];
+  }
+
+  template <size_t I>
+  static constexpr auto get_reversed_ith() {
+    return Vs...[sizeof...(Vs) - I - 1];
+  }
 
   template <auto V, size_t I, class Func>
   static constexpr bool for_each_call_dispatch(const Func& body)
@@ -113,6 +96,23 @@ private:
         "Result of func shall not be constant<x>. Return x instead.");
       return reduce_impl<I + 1, Func, Next>();
     }
+  }
+
+  template <size_t I, class Func, class T>
+  static constexpr auto reduce_impl(Func& body, const T& prev)
+  {
+    if constexpr (I >= sizeof...(Vs)) {
+      return prev;
+    } else {
+      auto next = std::invoke(body, prev, Derived<Vs...[I]>{});
+      return reduce_impl<I + 1>(body, next);
+    }
+  }
+
+  template <size_t... Is>
+  static constexpr auto reverse_impl(std::index_sequence<Is...>)
+  {
+    return Derived<get_reversed_ith<Is>()...>{};
   }
 
   template <size_t I, size_t D, class T>
@@ -210,7 +210,7 @@ public:
    *   return result
    */
   template <auto Func, auto Init>
-  static constexpr auto reduce() /* -> reduced_value */ {
+  static constexpr auto reduce() {
     return reduce_impl<0, Func, Init>();
   }
 
@@ -219,16 +219,13 @@ public:
    * Pseudocode:
    *   let result = init;
    *   for (cur in Vs)
-   *     result = Func(result, cur) as T;
+   *     result = Func(result, cur);
    *   return result
    */
   template <class Func, class T>
-  static constexpr auto reduce(Func&& body, T init) -> T
+  static constexpr auto reduce(Func&& body, const T& init)
   {
-    static_assert((std::is_invocable_r_v<T, Func, T, Derived<Vs>> && ...),
-      "Invalid call signature.");
-    (void)((init = std::invoke(body, init, Derived<Vs>{})), ...);
-    return init;
+    return reduce_impl<0>(body, init);
   }
 
   /**
@@ -237,6 +234,13 @@ public:
   template <auto... RhsVs>
   static constexpr auto concat(Derived<RhsVs...>) {
     return Derived<Vs..., RhsVs...>{};
+  }
+
+  /**
+   * Makes the reversed value list.
+   */
+  static constexpr auto reverse() {
+    return reverse_impl(std::make_index_sequence<sizeof...(Vs)>{});
   }
 
   /**
@@ -310,6 +314,15 @@ struct constant<V> : impl::constant_base<constant, V> {
   constexpr operator type() const {
     return V;
   }
+
+  template <template <class> class Container>
+  static constexpr auto to() -> Container<type> {
+    return Container<type>{values.begin(), values.end()};
+  }
+
+  static constexpr auto to_vector() -> std::vector<type> {
+    return std::vector(values.begin(), values.end());
+  }
 };
 
 template <auto V, auto... Rest>
@@ -317,6 +330,15 @@ template <auto V, auto... Rest>
 struct constant<V, Rest...> : impl::constant_base<constant, V, Rest...> {
   using type = decltype(V);
   static constexpr auto values = std::array{V, Rest...};
+
+  template <template <class> class Container>
+  static constexpr auto to() -> Container<type> {
+    return Container<type>{values.begin(), values.end()};
+  }
+
+  static constexpr auto to_vector() -> std::vector<type> {
+    return std::vector(values.begin(), values.end());
+  }
 };
 
 /**

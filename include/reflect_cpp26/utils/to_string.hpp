@@ -2,7 +2,7 @@
 #define REFLECT_CPP26_UTILS_TO_STRING_HPP
 
 #include <reflect_cpp26/type_traits/arithmetic_types.hpp>
-#include <reflect_cpp26/utils/ctype.h>
+#include <reflect_cpp26/utils/ctype.hpp>
 #include <reflect_cpp26/utils/meta_string_view.hpp>
 #include <reflect_cpp26/utils/utility.hpp>
 #include <bit>
@@ -31,20 +31,13 @@ constexpr auto to_string(char8_t value, bool quoted = false) -> std::string
     return std::string(1zU, static_cast<char>(value));
   }
   switch (value) {
-  case '\0':
-    return quoted ? "'\\0'" : "\\0";
-  case '\t':
-    return quoted ? "'\\t'" : "\\t";
-  case '\n':
-    return quoted ? "'\\n'" : "\\n";
-  case '\v':
-    return quoted ? "'\\v'" : "\\v";
-  case '\f':
-    return quoted ? "'\\f'" : "\\f";
-  case '\r':
-    return quoted ? "'\\r'" : "\\r";
-  default:
-    break;
+    case '\0': return quoted ? "'\\0'" : "\\0";
+    case '\t': return quoted ? "'\\t'" : "\\t";
+    case '\n': return quoted ? "'\\n'" : "\\n";
+    case '\v': return quoted ? "'\\v'" : "\\v";
+    case '\f': return quoted ? "'\\f'" : "\\f";
+    case '\r': return quoted ? "'\\r'" : "\\r";
+    default: break;
   }
   auto res = std::string{quoted ? "'\\x**'" : "\\x**"};
   auto* out = res.data() + quoted + 2; // 2 : Length of backslash and 'x'
@@ -123,7 +116,7 @@ constexpr auto char_to_string_dispatch(CharT value, bool quoted) -> std::string
     return to_string(static_cast<char8_t>(value), quoted);
   } else if constexpr (sizeof(CharT) == 2) {
     return to_string<std::endian::native>(static_cast<char16_t>(value), quoted);
-  } else if constexpr (sizeof(CharT) == 4) {
+  } else {
     static_assert(sizeof(CharT) == 4, "Unknown char type.");
     return to_string<std::endian::native>(static_cast<char32_t>(value), quoted);
   }
@@ -149,20 +142,27 @@ constexpr auto to_string(bool value) -> std::string {
   return value ? "true" : "false";
 }
 
+constexpr auto to_display_string(bool value) -> std::string {
+  return to_string(value);
+}
+
 /**
  * to_string(CharT) where CharT is one of character type.
  */
-template <class CharT>
-  requires (is_char_type_v<CharT>)
+template <char_type CharT>
 constexpr auto to_string(CharT value, bool quoted = false) -> std::string {
   return impl::char_to_string_dispatch(value, quoted);
+}
+
+template <char_type CharT>
+constexpr auto to_display_string(CharT value) -> std::string {
+  return to_string(value, true);
 }
 
 /**
  * to_string(IntegerT) where IntegerT is one of integer type.
  */
-template <class IntegerT>
-  requires (is_integer_type_v<IntegerT>)
+template <integer_type IntegerT>
 constexpr auto to_string(IntegerT value, int radix = 10) -> std::string
 {
   if (radix < 2 || radix > 36) {
@@ -184,12 +184,16 @@ constexpr auto to_string(IntegerT value, int radix = 10) -> std::string
   return res;
 }
 
+template <integer_type IntegerT>
+constexpr auto to_display_string(IntegerT value) -> std::string {
+  return to_string(value);
+}
+
 /**
  * to_string(FloatT) where FloatT is one of floating-point type.
  * Note: Only general and hex modes are supported.
  */
-template <class FloatT>
-  requires (std::is_floating_point_v<FloatT>)
+template <std::floating_point FloatT>
 constexpr auto to_string(
   FloatT value, std::chars_format fmt = std::chars_format::general)
   -> std::string
@@ -217,8 +221,7 @@ constexpr auto to_string(
  * to_string(FloatT, fmt, precision) where FloatT is one of floating-point type.
  * Note: Only general and hex modes are supported.
  */
-template <class FloatT>
-  requires (std::is_floating_point_v<FloatT>)
+template <std::floating_point FloatT>
 constexpr auto to_string(FloatT value, std::chars_format fmt, int precision)
   -> std::string
 {
@@ -242,6 +245,11 @@ constexpr auto to_string(FloatT value, std::chars_format fmt, int precision)
       return ptr - buffer;
     });
   return res;
+}
+
+template <std::floating_point FloatT>
+constexpr auto to_display_string(FloatT value) -> std::string {
+  return to_string(value);
 }
 
 namespace impl {
@@ -314,8 +322,16 @@ constexpr auto to_display_string(std::string_view string) -> std::string
  * to_string(const char*)
  */
 constexpr auto to_string(const char* string, bool display_style = false)
-  -> std::string {
+  -> std::string
+{
+  if (string == nullptr) {
+    return display_style ? "\"\"" : "";
+  }
   return display_style ? impl::to_display_string(string) : std::string{string};
+}
+
+constexpr auto to_display_string(const char* string) -> std::string {
+  return to_string(string, true);
 }
 
 /**
@@ -328,6 +344,13 @@ constexpr auto to_string(
 {
   auto sv = std::string_view{string.data(), string.size()};
   return display_style ? impl::to_display_string(sv) : std::string{sv};
+}
+
+template <class Traits, class Alloc>
+constexpr auto to_display_string(
+  const std::basic_string<char, Traits, Alloc>& string) -> std::string
+{
+  return to_string(string, true);
 }
 
 /**
@@ -349,6 +372,13 @@ constexpr auto to_string(
   }
 }
 
+template <class Traits, class Alloc>
+constexpr auto to_display_string(
+  std::basic_string<char, Traits, Alloc>&& string) -> std::string
+{
+  return to_string(std::move(string), true);
+}
+
 /**
  * to_string(std::string_view)
  */
@@ -361,6 +391,13 @@ constexpr auto to_string(
   return display_style ? impl::to_display_string(sv) : std::string{sv};
 }
 
+template <class Traits>
+constexpr auto to_display_string(
+  std::basic_string_view<char, Traits> string) -> std::string
+{
+  return to_string(string, true);
+}
+
 /**
  * to_string(meta_string_view)
  */
@@ -369,6 +406,10 @@ constexpr auto to_string(meta_string_view string, bool display_style = false)
 {
   auto sv = std::string_view{string.data(), string.size()};
   return display_style ? impl::to_display_string(sv) : std::string{sv};
+}
+
+constexpr auto to_display_string(meta_string_view string) -> std::string {
+  return to_string(string, true);
 }
 } // namespace reflect_cpp26
 

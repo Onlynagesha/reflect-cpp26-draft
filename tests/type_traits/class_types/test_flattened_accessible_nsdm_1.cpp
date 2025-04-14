@@ -85,14 +85,14 @@ void force_write_by_offset(void* base, uintptr_t offset, T value)
 TEST(TypeTraitsClassTypes, NSDMListGroup1Monostate)
 {
   constexpr auto std_monostate_members =
-    rfl::flattened_accessible_nonstatic_data_members_v<std::monostate>;
+    rfl::public_flattened_nsdm_v<std::monostate>;
   static_assert(std_monostate_members.size() == 0);
 }
 
 TEST(TypeTraitsClassTypes, NSDMListGroup1Foo)
 {
   constexpr auto foo_members =
-    rfl::flattened_accessible_nonstatic_data_members_v<foo_t>;
+    rfl::public_flattened_nsdm_v<foo_t>;
   static_assert(foo_members.size() == 2);
   auto expected_offsets = std::array{0zU, 4zU};
   EXPECT_THAT(foo_members.map<[](auto sp) {
@@ -108,7 +108,7 @@ TEST(TypeTraitsClassTypes, NSDMListGroup1Foo)
 TEST(TypeTraitsClassTypes, NSDMListGroup1Bar1)
 {
   constexpr auto bar_1_members =
-    rfl::flattened_accessible_nonstatic_data_members_v<bar_1_t>;
+    rfl::public_flattened_nsdm_v<bar_1_t>;
   static_assert(bar_1_members.size() == 4);
   auto expected_offsets = std::array{0zU, 4zU, 16zU, 20zU};
   EXPECT_THAT(bar_1_members.map<[](auto sp) {
@@ -127,7 +127,7 @@ TEST(TypeTraitsClassTypes, NSDMListGroup1Bar1)
 TEST(TypeTraitsClassTypes, NSDMListGroup1Bar2)
 {
   constexpr auto bar_2_members =
-    rfl::flattened_accessible_nonstatic_data_members_v<bar_2_t>;
+    rfl::public_flattened_nsdm_v<bar_2_t>;
   static_assert(bar_2_members.size() == 3);
 
   auto bar_2 = bar_2_t{};
@@ -149,7 +149,7 @@ TEST(TypeTraitsClassTypes, NSDMListGroup1Bar2)
 TEST(TypeTraitsClassTypes, NSDMListGroup1Bar3)
 {
   constexpr auto bar_3_members =
-    rfl::flattened_accessible_nonstatic_data_members_v<bar_3_t>;
+    rfl::public_flattened_nsdm_v<bar_3_t>;
   static_assert(bar_3_members.size() == 3);
 
   auto bar_3 = bar_3_t{};
@@ -172,7 +172,7 @@ TEST(TypeTraitsClassTypes, NSDMListGroup1Bar3)
 TEST(TypeTraitsClassTypes, NSDMListGroup1Baz1)
 {
   constexpr auto baz_1_members =
-    rfl::flattened_accessible_nonstatic_data_members_v<baz_1_t>;
+    rfl::public_flattened_nsdm_v<baz_1_t>;
   static_assert(baz_1_members.size() == 9);
 
   auto baz_1 = baz_1_t{};

@@ -1,4 +1,4 @@
-#include <gtest/gtest.h>
+#include "test_options.hpp"
 #include <reflect_cpp26/type_traits.hpp>
 #include <reflect_cpp26/utils/meta_span.hpp>
 #include <reflect_cpp26/utils/meta_string_view.hpp>
@@ -9,8 +9,8 @@
 namespace rfl = reflect_cpp26;
 
 // void
-static_assert(! rfl::is_structured_type_v<void>);
-static_assert(! rfl::is_structured_type_v<const void>);
+static_assert(NOT rfl::is_structured_type_v<void>);
+static_assert(NOT rfl::is_structured_type_v<const void>);
 
 // integral type
 static_assert(rfl::is_structured_type_v<int>);
@@ -26,7 +26,7 @@ using std_vector_int = std::vector<int>;
 constexpr auto printf_constant = rfl::constant<std::printf>{};
 constexpr auto printf_fptr = std::printf;
 // Note: decltype(printf) -> int (const char *, ...)
-static_assert(! rfl::is_structured_type_v<decltype(printf)>);
+static_assert(NOT rfl::is_structured_type_v<decltype(printf)>);
 
 static_assert(rfl::is_structured_type_v<void*>);
 static_assert(rfl::is_structured_type_v<const char*>);
@@ -50,8 +50,8 @@ static_assert(rfl::is_structured_type_v<volatile std_vector_int&>);
 static_assert(rfl::is_structured_type_v<const volatile std_vector_int&>);
 
 // rvalue references are not structured types.
-static_assert(! rfl::is_structured_type_v<int&&>);
-static_assert(! rfl::is_structured_type_v<const int&&>);
+static_assert(NOT rfl::is_structured_type_v<int&&>);
+static_assert(NOT rfl::is_structured_type_v<const int&&>);
 
 // pointer-to-members
 using std_pair_double = std::pair<double, double>;
@@ -72,13 +72,13 @@ void test_lambdas()
   auto some_lambda_with_capture = [&some_value](int) {};
   static_assert(rfl::is_structured_type_v<
     decltype(some_lambda)>);
-  static_assert(! rfl::is_structured_type_v<
+  static_assert(NOT rfl::is_structured_type_v<
     decltype(some_lambda_with_capture)>);
 }
 
 // C-style arrays are not structured types
-static_assert(! rfl::is_structured_type_v<int[4]>);
-static_assert(! rfl::is_structured_type_v<int[]>);
+static_assert(NOT rfl::is_structured_type_v<int[4]>);
+static_assert(NOT rfl::is_structured_type_v<int[]>);
 
 struct foo_t {
   size_t index;
@@ -89,13 +89,13 @@ struct foo_t {
 // non-closure literal class type
 static_assert(rfl::is_structured_type_v<const foo_t>);
 static_assert(rfl::is_structured_type_v<volatile std_array_int_4>);
-static_assert(! rfl::is_structured_type_v<std_vector_int>);
+static_assert(NOT rfl::is_structured_type_v<std_vector_int>);
 
 using meta_tuple_cilfd = rfl::meta_tuple<char, int, long, float, double>;
 static_assert(rfl::is_structured_type_v<rfl::meta_string_view>);
-static_assert(! rfl::is_structured_type_v<std::string_view>);
+static_assert(NOT rfl::is_structured_type_v<std::string_view>);
 static_assert(rfl::is_structured_type_v<rfl::meta_span<int>>);
-static_assert(! rfl::is_structured_type_v<std::span<const int>>);
+static_assert(NOT rfl::is_structured_type_v<std::span<const int>>);
 static_assert(rfl::is_structured_type_v<meta_tuple_cilfd>);
 
 struct bar_with_const_t {
@@ -120,8 +120,8 @@ struct bar_with_mutable_t {
 // class types: with cv-qualified or mutable members
 static_assert(rfl::is_structured_type_v<bar_with_const_t>);
 static_assert(rfl::is_structured_type_v<volatile bar_with_const_t>);
-static_assert(! rfl::is_structured_type_v<bar_with_volatile_t>);
-static_assert(! rfl::is_structured_type_v<bar_with_mutable_t>);
+static_assert(NOT rfl::is_structured_type_v<bar_with_volatile_t>);
+static_assert(NOT rfl::is_structured_type_v<bar_with_mutable_t>);
 
 union baz_union_1_t {
   bar_with_volatile_t as_bar; // not literal type due to its volatile members
@@ -149,9 +149,9 @@ struct baz_struct_2_t {
 
 // union types
 static_assert(rfl::is_structured_type_v<baz_union_1_t>);
-static_assert(! rfl::is_structured_type_v<baz_union_2_t>);
+static_assert(NOT rfl::is_structured_type_v<baz_union_2_t>);
 static_assert(rfl::is_structured_type_v<baz_struct_1_t>);
-static_assert(! rfl::is_structured_type_v<baz_struct_2_t>);
+static_assert(NOT rfl::is_structured_type_v<baz_struct_2_t>);
 
 struct has_array_1_t {
   int sum;
@@ -177,7 +177,7 @@ struct has_array_4_t {
 static_assert(rfl::is_structured_type_v<has_array_1_t>);
 static_assert(rfl::is_structured_type_v<has_array_2_t>);
 static_assert(rfl::is_structured_type_v<has_array_3_t>);
-static_assert(! rfl::is_structured_type_v<has_array_4_t>);
+static_assert(NOT rfl::is_structured_type_v<has_array_4_t>);
 
 struct struct_not_destructible_t {
   int x;
@@ -199,7 +199,7 @@ struct struct_not_trivially_destructible_t {
     }
   }
 };
-static_assert(!std::is_trivially_destructible_v<
+static_assert(NOT std::is_trivially_destructible_v<
   struct_not_trivially_destructible_t>, "Incorrect test case.");
 constexpr auto some_global_int = 42;
 constexpr auto struct_not_trivially_destructible_constant = rfl::constant<
@@ -216,10 +216,10 @@ union union_not_destructible_2_t {
 };
 
 // class types: not (trivially) destructible
-static_assert(! rfl::is_structured_type_v<struct_not_destructible_t>);
+static_assert(NOT rfl::is_structured_type_v<struct_not_destructible_t>);
 static_assert(rfl::is_structured_type_v<struct_not_trivially_destructible_t>);
-static_assert(! rfl::is_structured_type_v<union_not_destructible_1_t>);
-static_assert(! rfl::is_structured_type_v<union_not_destructible_2_t>);
+static_assert(NOT rfl::is_structured_type_v<union_not_destructible_1_t>);
+static_assert(NOT rfl::is_structured_type_v<union_not_destructible_2_t>);
 
 struct derived_structured_1_t : struct_not_trivially_destructible_t {
   int rating;
@@ -246,8 +246,8 @@ struct derived_not_structured_2_t : derived_not_structured_1_t, foo_t {
 // class types: with inheritance
 static_assert(rfl::is_structured_type_v<derived_structured_1_t>);
 static_assert(rfl::is_structured_type_v<derived_structured_2_t>);
-static_assert(! rfl::is_structured_type_v<derived_not_structured_1_t>);
-static_assert(! rfl::is_structured_type_v<derived_not_structured_2_t>);
+static_assert(NOT rfl::is_structured_type_v<derived_not_structured_1_t>);
+static_assert(NOT rfl::is_structured_type_v<derived_not_structured_2_t>);
 
 struct foo_A_t : virtual foo_t {
   size_t a;
@@ -262,9 +262,9 @@ struct foo_C_t : foo_A_t, foo_B_t {
 };
 
 // note: struct with virtual base class is not a literal type
-static_assert(! rfl::is_structured_type_v<foo_A_t>);
-static_assert(! rfl::is_structured_type_v<foo_B_t>);
-static_assert(! rfl::is_structured_type_v<foo_C_t>);
+static_assert(NOT rfl::is_structured_type_v<foo_A_t>);
+static_assert(NOT rfl::is_structured_type_v<foo_B_t>);
+static_assert(NOT rfl::is_structured_type_v<foo_C_t>);
 
 struct default_ctor_not_constexpr_t {
   int x = 0;

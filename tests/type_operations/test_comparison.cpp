@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include <reflect_cpp26/type_operations/comparison.hpp>
+#include <reflect_cpp26/type_operations.hpp>
 #include <cstdio>
 #include <deque>
 #include <limits>
@@ -136,11 +136,11 @@ static_assert(rfl::generic_not_equal(&foo_t::foo, &foo_t::bar));
 // Member pointers are not 3-way comparable.
 static_assert(! rfl::is_less_comparable_v<
   int foo_t::*, int foo_t::*>);
-static_assert(! rfl::is_generic_compare_three_way_comparable_v<
+static_assert(! rfl::is_generic_three_way_comparable_v<
   int foo_t::*, int foo_t::*>);
 static_assert(! rfl::less_comparable_with<
   void (foo_t::*)(int), void (foo_t::*)(int)>);
-static_assert(! rfl::generic_compare_three_way_comparable_with<
+static_assert(! rfl::generic_three_way_comparable_with<
   void (foo_t::*)(int), void (foo_t::*)(int)>);
 
 // Enum types
@@ -310,12 +310,12 @@ static_assert(! rfl::is_generic_equal_comparable_v<
   std::initializer_list<bar_t>, std::initializer_list<int>>);
 static_assert(rfl::is_generic_not_equal_comparable_v<
   bar_t, std::initializer_list<int>>);
-static_assert(! rfl::is_generic_compare_three_way_comparable_v<
+static_assert(! rfl::is_generic_three_way_comparable_v<
   std::initializer_list<int>, std::initializer_list<bar_t>>);
-static_assert(rfl::is_generic_compare_three_way_comparable_v<
+static_assert(rfl::is_generic_three_way_comparable_v<
   std::initializer_list<int>, bar_t>);
-static_assert(! rfl::is_generic_compare_three_way_comparable_v<bar_t, bar_t>);
-static_assert(! rfl::is_generic_compare_three_way_comparable_v<
+static_assert(! rfl::is_generic_three_way_comparable_v<bar_t, bar_t>);
+static_assert(! rfl::is_generic_three_way_comparable_v<
   std::initializer_list<bar_t>, std::initializer_list<bar_t>>);
 
 // C-style arrays
@@ -345,13 +345,13 @@ static_assert(check_equality(
 // Both are arrays: range comparison
 static_assert(rfl::is_generic_equal_comparable_v<char[6], char[6]>);
 static_assert(rfl::is_generic_not_equal_comparable_v<char[6], char[7]>);
-static_assert(rfl::is_generic_compare_three_way_comparable_v<char[6], char[8]>);
+static_assert(rfl::is_generic_three_way_comparable_v<char[6], char[8]>);
 // Array vs. pointer: comparison is disabled to prevent ambiguity
 static_assert(! rfl::is_generic_equal_comparable_v<
   char[6], const char*>);
 static_assert(! rfl::is_generic_not_equal_comparable_v<
   const char*, char[6]>);
-static_assert(! rfl::is_generic_compare_three_way_comparable_v<
+static_assert(! rfl::is_generic_three_way_comparable_v<
   char[6], const char*>);
 // Array vs. implicitly converted pointer: disabled as well.
 struct convertible_to_ptr_t {
@@ -367,7 +367,7 @@ static_assert(! rfl::is_generic_equal_comparable_v<
   char[6], convertible_to_ptr_t>);
 static_assert(! rfl::generic_not_equal_comparable_with<
   convertible_to_ptr_t, char[6]>);
-static_assert(! rfl::is_generic_compare_three_way_comparable_v<
+static_assert(! rfl::is_generic_three_way_comparable_v<
   char[6], convertible_to_ptr_t>);
 
 TEST(TypeOperationsComparison, Arrays) {
@@ -427,7 +427,7 @@ static_assert(! rfl::is_generic_equal_comparable_v<
   decltype(constant_1), decltype(constant_4)>);
 static_assert(! rfl::generic_not_equal_comparable_with<
   decltype(constant_1), decltype(constant_4)>);
-static_assert(! rfl::is_generic_compare_three_way_comparable<
+static_assert(! rfl::is_generic_three_way_comparable<
   decltype(constant_1), decltype(constant_4)>::value);
 
 constexpr auto std_tuple_1 = std::tuple{1.0, 2, 3u};

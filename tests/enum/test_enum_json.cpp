@@ -1,3 +1,8 @@
+// Note: This non-static test case shall be preserved
+// since we will check the binary executable file with external tools on
+// whether the complete JSON string is generated in compile-time
+// (which is unexpected behavior).
+
 #include <gtest/gtest.h>
 #include <reflect_cpp26/enum.hpp>
 #include "./test_cases.hpp"

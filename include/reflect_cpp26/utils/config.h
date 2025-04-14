@@ -13,34 +13,32 @@
 
 #if __cplusplus
 #define REFLECT_CPP26_BOOL bool
-#define REFLECT_CPP26_CONSTEXPR constexpr
 #define REFLECT_CPP26_EXTERN_C_BEGIN extern "C" {
 #define REFLECT_CPP26_EXTERN_C_END }
-#define REFLECT_CPP26_INLINE inline // For inline functions only
 #else
 #define REFLECT_CPP26_BOOL _Bool
-#define REFLECT_CPP26_CONSTEXPR static inline
 #define REFLECT_CPP26_EXTERN_C_BEGIN
 #define REFLECT_CPP26_EXTERN_C_END
-#define REFLECT_CPP26_INLINE static inline // For inline functions only
 #endif
 
 #if __cplusplus
 namespace reflect_cpp26 {
 [[noreturn]] int compile_error(const char* msg) noexcept;
 } // namespace reflect_cpp26
-#define REFLECT_CPP26_ERROR_IF_CONSTEVAL(msg)       \
-do {                                                \
-  if consteval {                                    \
-    ::reflect_cpp26::compile_error(msg);            \
-  }                                                 \
-} while (false)
+#define REFLECT_CPP26_ERROR_IF_CONSTEVAL(msg) \
+  do {                                        \
+    if consteval {                            \
+      ::reflect_cpp26::compile_error(msg);    \
+    }                                         \
+  } while (false)
+#define REFLECT_CPP26_UNREACHABLE(msg)      \
+  do {                                      \
+    REFLECT_CPP26_ERROR_IF_CONSTEVAL(msg);  \
+    __builtin_unreachable();                \
+  } while (false)
 #else
 #define REFLECT_CPP26_ERROR_IF_CONSTEVAL(msg) // No-op
+#define REFLECT_CPP26_UNREACHABLE(msg) __builtin_unreachable()
 #endif
-
-#define REFLECT_CPP26_UNREACHABLE(msg)    \
-  REFLECT_CPP26_ERROR_IF_CONSTEVAL(msg);  \
-  __builtin_unreachable()
 
 #endif // REFLECT_CPP26_UTILS_CONFIG_H

@@ -2,7 +2,7 @@
 #define REFLECT_CPP26_ENUM_ENUM_HASH_HPP
 
 #include <reflect_cpp26/enum/enum_json.hpp>
-#include <reflect_cpp26/utils/string_hash.h>
+#include <reflect_cpp26/utils/string_hash.hpp>
 
 namespace reflect_cpp26 {
 namespace impl {
@@ -11,7 +11,7 @@ constexpr auto enum_hash()
 {
   constexpr auto Order = enum_entry_order::by_name;
   auto repr_str = reflect_cpp26::enum_json<E, Order>();
-  return bkdr_hash64(repr_str.data(), repr_str.data() + repr_str.length());
+  return bkdr_hash64(repr_str);
 }
 
 template <class E>
@@ -24,8 +24,7 @@ constexpr auto enum_hash_v = enum_hash<E>();
  * modification to name or value) will change the hash value.
  * But only changing entry order will not.
  */
-template <class E>
-  requires (std::is_enum_v<E>)
+template <enum_type E>
 constexpr auto enum_hash() -> uint64_t {
   return impl::enum_hash_v<std::remove_cv_t<E>>;
 }

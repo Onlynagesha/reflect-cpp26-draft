@@ -1,11 +1,15 @@
 #ifndef REFLECT_CPP26_UTILS_META_UTILITY_HPP
 #define REFLECT_CPP26_UTILS_META_UTILITY_HPP
 
+#include <reflect_cpp26/utils/concepts.hpp>
 #include <reflect_cpp26/utils/config.h>
 #include <reflect_cpp26/utils/expand.hpp>
 #include <reflect_cpp26/utils/ranges.hpp>
 
 namespace reflect_cpp26 {
+using unary_meta_predicate_fptr = bool (*)(std::meta::info);
+using binary_meta_predicate_fptr = bool (*)(std::meta::info, std::meta::info);
+
 // -------- Reflection with access control (P3547) --------
 
 consteval auto current_context() {
@@ -31,25 +35,25 @@ consteval auto unchecked_context() {
  *     translation units with different visible subsets of namespace std;
  * (2) Context differs.
  */
-#define REFLECT_CPP26_DEFINE_QUERY_WITH_ACCESS_CONTEXT(fn)                \
+#define REFLECT_CPP26_DEFINE_QUERY_WITH_ACCESS_CONTEXT(fn, renamed)       \
   /* Gets all direct members that are accessible in current scope */      \
-  consteval auto currently_accessible_##fn##_of(std::meta::info a) {      \
+  consteval auto accessible_direct_##renamed##_of(std::meta::info a) {    \
     return std::meta::fn##_of(a, reflect_cpp26::current_context());       \
   }                                                                       \
   /** Gets all direct members that are accessible in global scope */      \
-  consteval auto globally_accessible_##fn##_of(std::meta::info a) {       \
+  consteval auto public_direct_##renamed##_of(std::meta::info a) {        \
     return std::meta::fn##_of(a, reflect_cpp26::unprivileged_context());  \
   }                                                                       \
   /* Gets all direct members regardless of their accessibility */         \
-  consteval auto all_direct_##fn##_of(std::meta::info a) {                \
+  consteval auto all_direct_##renamed##_of(std::meta::info a) {           \
     return std::meta::fn##_of(a, reflect_cpp26::unchecked_context());     \
   }
 
 // Expanded dfinitions see above
-REFLECT_CPP26_DEFINE_QUERY_WITH_ACCESS_CONTEXT(members)
-REFLECT_CPP26_DEFINE_QUERY_WITH_ACCESS_CONTEXT(bases)
-REFLECT_CPP26_DEFINE_QUERY_WITH_ACCESS_CONTEXT(static_data_members)
-REFLECT_CPP26_DEFINE_QUERY_WITH_ACCESS_CONTEXT(nonstatic_data_members)
+REFLECT_CPP26_DEFINE_QUERY_WITH_ACCESS_CONTEXT(members, members)
+REFLECT_CPP26_DEFINE_QUERY_WITH_ACCESS_CONTEXT(bases, bases)
+REFLECT_CPP26_DEFINE_QUERY_WITH_ACCESS_CONTEXT(static_data_members, sdm)
+REFLECT_CPP26_DEFINE_QUERY_WITH_ACCESS_CONTEXT(nonstatic_data_members, nsdm)
 
 #undef REFLECT_CPP26_DEFINE_QUERY_WITH_ACCESS_CONTEXT
 
@@ -59,17 +63,19 @@ REFLECT_CPP26_DEFINE_QUERY_WITH_ACCESS_CONTEXT(nonstatic_data_members)
  * Transforms a pointer to member to its corresponding reflection such that
  * reflect_pointer_to_member(&Foo::bar) == ^Foo::bar
  */
-template <class T, class Member>
-  requires (!std::is_function_v<Member>)
+template <non_function_type T, class Member>
 consteval auto reflect_pointer_to_member(Member T::*mptr) -> std::meta::info
 {
   // todo: Is O(1) lookup possible?
   auto res = std::meta::info{};
   auto target = std::meta::reflect_value(mptr);
-  REFLECT_CPP26_EXPAND(all_direct_nonstatic_data_members_of(^^T)).for_each(
-    [&res, target](auto cur_member) {
-      if (std::meta::reflect_value(&[:cur_member:]) == target) {
-        res = cur_member;
+  REFLECT_CPP26_EXPAND(all_direct_nsdm_of(^^T)).for_each(
+    [&res, target](auto cur) {
+      if (is_reference_type(type_of(cur.value)) || is_bit_field(cur.value)) {
+        return true; // Continues;
+      }
+      if (std::meta::reflect_value(&[:cur:]) == target) {
+        res = cur;
         return false; // Stops for-each loop
       }
       return true; // Continues
@@ -113,12 +119,6 @@ consteval bool extract_bool(std::meta::info templ, Args... templ_params)
     std::meta::substitute(templ, {templ_params...}));
 }
 
-template <input_range_of<std::meta::info> MetaRange>
-consteval bool extract_bool(std::meta::info templ, MetaRange&& templ_params)
-{
-  return std::meta::extract<bool>(
-    std::meta::substitute(templ, std::forward<MetaRange>(templ_params)));
-}
 // -------- Substitution helpers --------
 
 template <std::same_as<std::meta::info>... Args>
@@ -136,7 +136,6 @@ struct splice_to_value_t {
   }
 };
 constexpr auto splice_to_value = splice_to_value_t{};
-
 } // namespace reflect_cpp26
 
 #endif // REFLECT_CPP26_UTILS_META_UTILITY_HPP

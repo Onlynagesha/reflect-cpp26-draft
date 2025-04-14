@@ -3,7 +3,7 @@
 
 #include <reflect_cpp26/enum/enum_for_each.hpp>
 #include <reflect_cpp26/utils/define_static_values.hpp>
-#include <reflect_cpp26/utils/string_hash.h>
+#include <reflect_cpp26/utils/string_hash.hpp>
 #include <reflect_cpp26/utils/utility.hpp>
 #include <bit>
 #include <utility>

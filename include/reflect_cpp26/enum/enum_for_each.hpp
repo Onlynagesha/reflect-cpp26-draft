@@ -12,9 +12,8 @@ namespace reflect_cpp26 {
  *   func(constant<ei>)
  * See constant::for_each for more details.
  */
-template <class E, enum_entry_order Order = enum_entry_order::original,
+template <enum_type E, enum_entry_order Order = enum_entry_order::original,
           class Func>
-  requires (std::is_enum_v<E>)
 constexpr auto enum_for_each(Func&& func) -> void {
   enum_value_constants<E, Order>().for_each(std::forward<Func>(func));
 }
@@ -27,9 +26,8 @@ constexpr auto enum_for_each(Func&& func) -> void {
  *   func(constant<meta_ei>)
  * See constant::for_each for more details.
  */
-template <class E, enum_entry_order Order = enum_entry_order::original,
+template <enum_type E, enum_entry_order Order = enum_entry_order::original,
           class Func>
-  requires (std::is_enum_v<E>)
 constexpr auto enum_meta_for_each(Func&& func) -> void {
   enum_meta_entries<E, Order>().for_each(std::forward<Func>(func));
 }

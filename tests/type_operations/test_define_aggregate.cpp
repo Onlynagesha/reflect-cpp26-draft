@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
-#include <reflect_cpp26/type_traits.hpp>
+#include <reflect_cpp26/type_operations.hpp>
+#include <reflect_cpp26/type_traits/class_types/member_traits.hpp>
 #include <deque>
 #include <limits>
 #include <list>
@@ -29,10 +30,9 @@ struct foo_t {
 };
 
 // No inheritance. Unary transform function.
-using foo_soa_t = rfl::aggregate_by_direct_memberwise_zip_transform_t<
+using foo_soa_t = rfl::aggregate_by_direct_memberwise_t<
   to_c_style_array<4>, foo_t>;
-static_assert(rfl::all_direct_nonstatic_data_members_of(
-  ^^foo_soa_t).size() == 4);
+static_assert(rfl::all_direct_nsdm_of(^^foo_soa_t).size() == 4);
 
 using foo_soa_x_traits = rfl::member_pointer_traits<
   decltype(&foo_soa_t::x)>;
@@ -106,10 +106,9 @@ struct take_smallest {
 };
 
 // No inheritance. Ternary transform function.
-using bar_smallest_t = rfl::aggregate_by_direct_memberwise_zip_transform_t<
+using bar_smallest_t = rfl::aggregate_by_direct_memberwise_t<
   take_smallest, bar_A_t, bar_B_t, bar_C_t>;
-static_assert(rfl::all_direct_nonstatic_data_members_of(
-  ^^bar_smallest_t).size() == 3);
+static_assert(rfl::all_direct_nsdm_of(^^bar_smallest_t).size() == 3);
 
 static_assert(bar_smallest_t{
   .a1_x = 'a',
@@ -147,10 +146,9 @@ struct replace_value_type {
   }
 };
 
-using baz_replaced_t = rfl::aggregate_by_flattened_memberwise_zip_transform_t<
+using baz_replaced_t = rfl::aggregate_by_flattened_memberwise_t<
   replace_value_type, baz_A_t, baz_D_t>;
-static_assert(rfl::all_direct_nonstatic_data_members_of(
-  ^^baz_replaced_t).size() == 3);
+static_assert(rfl::all_direct_nsdm_of(^^baz_replaced_t).size() == 3);
 
 using baz_replaced_b1_traits =
   rfl::member_pointer_traits<decltype(&baz_replaced_t::a1_b1)>;
@@ -167,7 +165,7 @@ using baz_replaced_d1_traits =
 static_assert(std::is_same_v<
   std::vector<std::array<unsigned, 4>>, baz_replaced_d1_traits::target_type>);
 
-TEST(TypeTraitsClassTypes, MemberwiseZipTransform)
+TEST(TypeOperationsDefineAggregate, All)
 {
   // All other test cases done with static-asserts above
   auto baz_replaced = baz_replaced_t{

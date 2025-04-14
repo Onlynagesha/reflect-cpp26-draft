@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include <reflect_cpp26/type_operations/to_structured.hpp>
+#include <reflect_cpp26/type_operations.hpp>
 #include <reflect_cpp26/utils/to_string.hpp>
 #include <cstdio>
 #include <numeric>

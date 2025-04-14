@@ -3,6 +3,7 @@
 
 #include <reflect_cpp26/enum/impl/enum_value_entry_search.hpp>
 #include <reflect_cpp26/enum/enum_entries.hpp>
+#include <reflect_cpp26/utils/concepts.hpp>
 #include <reflect_cpp26/utils/define_static_values.hpp>
 
 namespace reflect_cpp26 {
@@ -25,7 +26,7 @@ constexpr auto enum_names_v = enum_names<E, Order>();
 /**
  * Gets the list of enum names.
  */
-template <class E, enum_entry_order Order = enum_entry_order::original>
+template <enum_type E, enum_entry_order Order = enum_entry_order::original>
 constexpr auto enum_names() -> std::span<const std::string_view>
 {
   return impl::enum_names_v<std::remove_cv_t<E>, Order>;
@@ -34,8 +35,7 @@ constexpr auto enum_names() -> std::span<const std::string_view>
 /**
  * Gets the enum name of value, or alt if fails.
  */
-template <class E>
-  requires (std::is_enum_v<E>)
+template <enum_type E>
 constexpr auto enum_name(E value, std::string_view alt = {})
   -> std::string_view
 {

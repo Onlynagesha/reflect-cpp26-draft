@@ -23,6 +23,16 @@
     std::views::iota(size_t{0}, size_t{n})      \
   ) :]
 
+/**
+ * Alternative to C++26 expansion statements for reversed index from n-1 to 0.
+ * Equivalent to:
+ * template for (constexpr size_t i: iota(0, n) | reverse)
+ */
+#define REFLECT_CPP26_EXPAND_REV_I(n)                             \
+  [: ::reflect_cpp26::make_for_each_replicator(                   \
+    std::views::iota(size_t{0}, size_t{n}) | std::views::reverse  \
+  ) :]
+
 namespace reflect_cpp26 {
 namespace impl {
 template<auto... Vs>

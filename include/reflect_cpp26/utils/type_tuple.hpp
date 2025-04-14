@@ -1,7 +1,6 @@
 #ifndef REFLECT_CPP26_TYPE_TRAITS_TYPE_TUPLE_HPP
 #define REFLECT_CPP26_TYPE_TRAITS_TYPE_TUPLE_HPP
 
-#include <reflect_cpp26/utils/config.h>
 #include <reflect_cpp26/utils/constant.hpp>
 #include <ranges>
 #include <tuple>
@@ -35,12 +34,54 @@ struct type_tuple_cat<type_tuple<ArgsA...>, type_tuple<ArgsB...>, Args...> {
 template <class... Tuples>
 using type_tuple_cat_t = typename type_tuple_cat<Tuples...>::type;
 
+template <class Tuple, class T>
+struct type_tuple_push_front {
+  static_assert(false, "The 1st parameter is not an instance of type_tuple.");
+};
+
+template <class... Args, class T>
+struct type_tuple_push_front<type_tuple<Args...>, T> {
+  using type = type_tuple<T, Args...>;
+};
+
+/**
+ * Prepends T to the head of Tuple.
+ */
+template <class Tuple, class T>
+using type_tuple_push_front_t = typename type_tuple_push_front<Tuple, T>::type;
+
+template <class Tuple, class T>
+struct type_tuple_push_back {
+  static_assert(false, "The 1st parameter is not an instance of type_tuple.");
+};
+
+template <class... Args, class T>
+struct type_tuple_push_back<type_tuple<Args...>, T> {
+  using type = type_tuple<Args..., T>;
+};
+
+/**
+ * Appends T to the tail of Tuple.
+ */
+template <class Tuple, class T>
+using type_tuple_push_back_t = typename type_tuple_push_back<Tuple, T>::type;
+
+template <class T, size_t N>
+struct type_tuple_repeat {
+  using prev_type = typename type_tuple_repeat<T, N - 1>::type;
+  using type = type_tuple_push_back_t<prev_type, T>;
+};
+
+template <class T>
+struct type_tuple_repeat<T, 0> {
+  using type = type_tuple<>;
+};
+
 /**
  * Makes type_tuple<T, T, ...> with T repeated N times.
  */
 template <class T, size_t N>
-using type_tuple_repeat_t =
-  [: substitute(^^type_tuple, std::views::repeat(^^T, N)) :];
+using type_tuple_repeat_t = typename type_tuple_repeat<T, N>::type;
 
 template <template <class...> class Traits, class TypeTuple>
 struct type_tuple_apply {
@@ -49,6 +90,20 @@ struct type_tuple_apply {
 
 template <template <class...> class Traits, class... Args>
 struct type_tuple_apply<Traits, type_tuple<Args...>> : Traits<Args...> {};
+
+/**
+ * Extracts Traits<Args...>::type where TypeTuple = type_tuple<Args...>.
+ */
+template <template <class...> class Traits, class TypeTuple>
+using type_tuple_apply_t =
+  typename type_tuple_apply<Traits, TypeTuple>::type;
+
+/**
+ * Extracts Traits<Args...>::value where TypeTuple = type_tuple<Args...>.
+ */
+template <template <class...> class Traits, class TypeTuple>
+constexpr auto type_tuple_apply_v =
+  type_tuple_apply<Traits, TypeTuple>::value;
 
 template <template <class...> class Template, class TypeTuple>
 struct type_tuple_substitute {
@@ -59,6 +114,13 @@ template <template <class...> class Template, class... Args>
 struct type_tuple_substitute<Template, type_tuple<Args...>> {
   using type = Template<Args...>;
 };
+
+/**
+ * Instantiates Template<Args...> where TypeTuple = type_tuple<Args...>.
+ */
+template <template <class...> class Template, class TypeTuple>
+using type_tuple_substitute_t =
+  typename type_tuple_substitute<Template, TypeTuple>::type;
 
 namespace impl {
 template <template <class...> class Predicate, class Func, class TypeTuple>
@@ -104,27 +166,6 @@ struct type_tuple_transform_to_value<Traits, type_tuple<Args...>> {
   static constexpr auto value = constant<Traits<Args>::value...>{};
 };
 } // namespace impl
-
-/**
- * Extracts Traits<Args...>::type where TypeTuple = type_tuple<Args...>.
- */
-template <template <class...> class Traits, class TypeTuple>
-using type_tuple_apply_t =
-  typename type_tuple_apply<Traits, TypeTuple>::type;
-
-/**
- * Extracts Traits<Args...>::value where TypeTuple = type_tuple<Args...>.
- */
-template <template <class...> class Traits, class TypeTuple>
-constexpr auto type_tuple_apply_v =
-  type_tuple_apply<Traits, TypeTuple>::value;
-
-/**
- * Instantiates Template<Args...> where TypeTuple = type_tuple<Args...>.
- */
-template <template <class...> class Template, class TypeTuple>
-using type_tuple_substitute_t =
-  typename type_tuple_substitute<Template, TypeTuple>::type;
 
 /**
  * Equivalent to std::is_invocable_v<Func, Args...> where
@@ -180,6 +221,9 @@ template <template <class> class Traits, class TypeTuple>
 constexpr auto type_tuple_transform_v =
   impl::type_tuple_transform_to_value<Traits, TypeTuple>::value;
 } // namespace reflect_cpp26
+
+// Note: Despite std::tuple_size and std::tuple_element being specialized,
+// type_tuple is not tuple-like since getters are not defined.
 
 template <class... Args>
 struct std::tuple_size<reflect_cpp26::type_tuple<Args...>>

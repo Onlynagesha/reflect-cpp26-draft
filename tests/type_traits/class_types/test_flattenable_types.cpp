@@ -1,4 +1,4 @@
-#include <gtest/gtest.h>
+#include "test_options.hpp"
 #include <reflect_cpp26/type_traits.hpp>
 #include <system_error>
 
@@ -13,9 +13,9 @@ static_assert(rfl::is_flattenable_v<int>);
 static_assert(rfl::is_flattenable_v<const long>);
 static_assert(rfl::is_flattenable_v<volatile float>);
 
-static_assert(! rfl::is_flattenable_aggregate_v<int>);
-static_assert(! rfl::is_flattenable_aggregate_v<const long>);
-static_assert(! rfl::is_flattenable_aggregate_v<volatile float>);
+static_assert(NOT rfl::is_flattenable_aggregate_v<int>);
+static_assert(NOT rfl::is_flattenable_aggregate_v<const long>);
+static_assert(NOT rfl::is_flattenable_aggregate_v<volatile float>);
 
 // Enum
 static_assert(rfl::is_partially_flattenable_v<std::byte>);
@@ -24,8 +24,8 @@ static_assert(rfl::is_partially_flattenable_v<std::errc>);
 static_assert(rfl::is_flattenable_v<std::byte>);
 static_assert(rfl::is_flattenable_v<std::errc>);
 
-static_assert(! rfl::is_flattenable_aggregate_v<std::byte>);
-static_assert(! rfl::is_flattenable_aggregate_v<std::errc>);
+static_assert(NOT rfl::is_flattenable_aggregate_v<std::byte>);
+static_assert(NOT rfl::is_flattenable_aggregate_v<std::errc>);
 
 // Pointers
 using std_pair = std::pair<double, double>;
@@ -42,27 +42,27 @@ static_assert(rfl::is_flattenable_v<std::nullptr_t>);
 static_assert(rfl::is_flattenable_v<double std_pair::*>);
 static_assert(rfl::is_flattenable_v<void (std_vector::*)(size_t)>);
 
-static_assert(! rfl::is_flattenable_aggregate_v<char*>);
-static_assert(! rfl::is_flattenable_aggregate_v<const long* volatile>);
-static_assert(! rfl::is_flattenable_aggregate_v<std::nullptr_t>);
-static_assert(! rfl::is_flattenable_aggregate_v<double std_pair::*>);
-static_assert(! rfl::is_flattenable_aggregate_v<void (std_vector::*)(size_t)>);
+static_assert(NOT rfl::is_flattenable_aggregate_v<char*>);
+static_assert(NOT rfl::is_flattenable_aggregate_v<const long* volatile>);
+static_assert(NOT rfl::is_flattenable_aggregate_v<std::nullptr_t>);
+static_assert(NOT rfl::is_flattenable_aggregate_v<double std_pair::*>);
+static_assert(NOT rfl::is_flattenable_aggregate_v<void (std_vector::*)(int)>);
 
 // References
-static_assert(! rfl::is_partially_flattenable_v<int&>);
-static_assert(! rfl::is_partially_flattenable_v<const std_pair&>);
-static_assert(! rfl::is_partially_flattenable_v<float&&>);
-static_assert(! rfl::is_partially_flattenable_v<const std_pair&&>);
+static_assert(NOT rfl::is_partially_flattenable_v<int&>);
+static_assert(NOT rfl::is_partially_flattenable_v<const std_pair&>);
+static_assert(NOT rfl::is_partially_flattenable_v<float&&>);
+static_assert(NOT rfl::is_partially_flattenable_v<const std_pair&&>);
 
-static_assert(! rfl::is_flattenable_v<int&>);
-static_assert(! rfl::is_flattenable_v<const std_pair&>);
-static_assert(! rfl::is_flattenable_v<float&&>);
-static_assert(! rfl::is_flattenable_v<const std_pair&&>);
+static_assert(NOT rfl::is_flattenable_v<int&>);
+static_assert(NOT rfl::is_flattenable_v<const std_pair&>);
+static_assert(NOT rfl::is_flattenable_v<float&&>);
+static_assert(NOT rfl::is_flattenable_v<const std_pair&&>);
 
-static_assert(! rfl::is_flattenable_aggregate_v<int&>);
-static_assert(! rfl::is_flattenable_aggregate_v<const std_pair&>);
-static_assert(! rfl::is_flattenable_aggregate_v<float&&>);
-static_assert(! rfl::is_flattenable_aggregate_v<const std_pair&&>);
+static_assert(NOT rfl::is_flattenable_aggregate_v<int&>);
+static_assert(NOT rfl::is_flattenable_aggregate_v<const std_pair&>);
+static_assert(NOT rfl::is_flattenable_aggregate_v<float&&>);
+static_assert(NOT rfl::is_flattenable_aggregate_v<const std_pair&&>);
 
 // Arrays
 using std_vector = std::vector<double>;
@@ -88,9 +88,9 @@ union some_union_t {
 };
 
 // Unions
-static_assert(! rfl::is_partially_flattenable_v<some_union_t>);
-static_assert(! rfl::is_flattenable_v<some_union_t>);
-static_assert(! rfl::is_flattenable_aggregate_v<some_union_t>);
+static_assert(NOT rfl::is_partially_flattenable_v<some_union_t>);
+static_assert(NOT rfl::is_flattenable_v<some_union_t>);
+static_assert(NOT rfl::is_flattenable_aggregate_v<some_union_t>);
 
 struct my_pair {
   std::string first;
@@ -102,7 +102,6 @@ struct my_pair_with_ctor {
   std::string second;
   my_pair_with_ctor() = default;
 };
-static_assert(!std::is_aggregate_v<my_pair_with_ctor>, "Incorrect test case.");
 
 // Class types: Basic
 static_assert(rfl::is_partially_flattenable_v<std::monostate>);
@@ -117,13 +116,13 @@ static_assert(rfl::is_flattenable_v<const std::to_chars_result>);
 static_assert(rfl::is_flattenable_v<volatile std_pair>);
 static_assert(rfl::is_flattenable_v<volatile my_pair>);
 static_assert(rfl::is_flattenable_v<my_pair_with_ctor>);
-static_assert(! rfl::is_flattenable_v<const volatile std_vector>);
+static_assert(NOT rfl::is_flattenable_v<const volatile std_vector>);
 
 static_assert(rfl::is_flattenable_aggregate_v<std::monostate>);
 static_assert(rfl::is_flattenable_aggregate_v<const std::to_chars_result>);
 static_assert(rfl::is_flattenable_aggregate_v<volatile my_pair>);
-static_assert(! rfl::is_flattenable_aggregate_v<my_pair_with_ctor>);
-static_assert(! rfl::is_flattenable_aggregate_v<const volatile std_vector>);
+static_assert(NOT rfl::is_flattenable_aggregate_v<my_pair_with_ctor>);
+static_assert(NOT rfl::is_flattenable_aggregate_v<const volatile std_vector>);
 
 struct my_pair_with_ctor_extended : my_pair_with_ctor {
   std::string third;
@@ -135,7 +134,7 @@ static_assert(std::is_aggregate_v<my_pair_with_ctor_extended>,
 // Class types: Non-aggregate base class
 static_assert(rfl::is_partially_flattenable_v<my_pair_with_ctor_extended>);
 static_assert(rfl::is_flattenable_v<my_pair_with_ctor_extended>);
-static_assert(! rfl::is_flattenable_aggregate_v<my_pair_with_ctor_extended>);
+static_assert(NOT rfl::is_flattenable_aggregate_v<my_pair_with_ctor_extended>);
 
 struct references_t {
   int& i;
@@ -241,8 +240,8 @@ static_assert(rfl::is_partially_flattenable_v<my_pair_extended_E>);
 static_assert(rfl::is_flattenable_v<my_pair_extended_D>);
 static_assert(rfl::is_flattenable_v<my_pair_extended_E>);
 
-static_assert(! rfl::is_flattenable_aggregate_v<my_pair_extended_D>);
-static_assert(! rfl::is_flattenable_aggregate_v<my_pair_extended_E>);
+static_assert(NOT rfl::is_flattenable_aggregate_v<my_pair_extended_D>);
+static_assert(NOT rfl::is_flattenable_aggregate_v<my_pair_extended_E>);
 
 struct foo_A_t : virtual my_pair {
   size_t a;
@@ -257,17 +256,17 @@ struct foo_C_t : foo_A_t, foo_B_t {
 };
 
 // Class types: Virtual inheritance
-static_assert(! rfl::is_partially_flattenable_v<foo_A_t>);
-static_assert(! rfl::is_partially_flattenable_v<foo_B_t>);
-static_assert(! rfl::is_partially_flattenable_v<foo_C_t>);
+static_assert(NOT rfl::is_partially_flattenable_v<foo_A_t>);
+static_assert(NOT rfl::is_partially_flattenable_v<foo_B_t>);
+static_assert(NOT rfl::is_partially_flattenable_v<foo_C_t>);
 
-static_assert(! rfl::is_flattenable_v<foo_A_t>);
-static_assert(! rfl::is_flattenable_v<foo_B_t>);
-static_assert(! rfl::is_flattenable_v<foo_C_t>);
+static_assert(NOT rfl::is_flattenable_v<foo_A_t>);
+static_assert(NOT rfl::is_flattenable_v<foo_B_t>);
+static_assert(NOT rfl::is_flattenable_v<foo_C_t>);
 
-static_assert(! rfl::is_flattenable_aggregate_v<foo_A_t>);
-static_assert(! rfl::is_flattenable_aggregate_v<foo_B_t>);
-static_assert(! rfl::is_flattenable_aggregate_v<foo_C_t>);
+static_assert(NOT rfl::is_flattenable_aggregate_v<foo_A_t>);
+static_assert(NOT rfl::is_flattenable_aggregate_v<foo_B_t>);
+static_assert(NOT rfl::is_flattenable_aggregate_v<foo_C_t>);
 
 struct bar_A_t : my_pair {
   size_t a;
@@ -284,15 +283,15 @@ struct bar_C_t : bar_A_t, bar_B_t {
 // Class types: Inheritance
 static_assert(rfl::is_partially_flattenable_v<bar_A_t>);
 static_assert(rfl::is_partially_flattenable_v<bar_B_t>);
-static_assert(! rfl::is_partially_flattenable_v<bar_C_t>);
+static_assert(NOT rfl::is_partially_flattenable_v<bar_C_t>);
 
 static_assert(rfl::is_flattenable_v<bar_A_t>);
 static_assert(rfl::is_flattenable_v<bar_B_t>);
-static_assert(! rfl::is_flattenable_v<bar_C_t>);
+static_assert(NOT rfl::is_flattenable_v<bar_C_t>);
 
 static_assert(rfl::is_flattenable_aggregate_v<bar_A_t>);
 static_assert(rfl::is_flattenable_aggregate_v<bar_B_t>);
-static_assert(! rfl::is_flattenable_aggregate_v<bar_C_t>);
+static_assert(NOT rfl::is_flattenable_aggregate_v<bar_C_t>);
 
 struct baz_A_t : protected my_pair {
   size_t a;
@@ -311,13 +310,13 @@ static_assert(rfl::is_partially_flattenable_v<baz_A_t>);
 static_assert(rfl::is_partially_flattenable_v<baz_B_t>);
 static_assert(rfl::is_partially_flattenable_v<baz_C_t>);
 
-static_assert(! rfl::is_flattenable_v<baz_A_t>);
-static_assert(! rfl::is_flattenable_v<baz_B_t>);
-static_assert(! rfl::is_flattenable_v<baz_C_t>);
+static_assert(NOT rfl::is_flattenable_v<baz_A_t>);
+static_assert(NOT rfl::is_flattenable_v<baz_B_t>);
+static_assert(NOT rfl::is_flattenable_v<baz_C_t>);
 
-static_assert(! rfl::is_flattenable_aggregate_v<baz_A_t>);
-static_assert(! rfl::is_flattenable_aggregate_v<baz_B_t>);
-static_assert(! rfl::is_flattenable_aggregate_v<baz_C_t>);
+static_assert(NOT rfl::is_flattenable_aggregate_v<baz_A_t>);
+static_assert(NOT rfl::is_flattenable_aggregate_v<baz_B_t>);
+static_assert(NOT rfl::is_flattenable_aggregate_v<baz_C_t>);
 
 TEST(TypeTraitsClassTypes, FlattenableTypes) {
   EXPECT_TRUE(true); // All test cases done with static-asserts above
