@@ -19,7 +19,8 @@ using meta_string_view_type_t = meta_basic_string_view<
   std::ranges::range_value_t<decltype(V)>>;
 
 template <auto V>
-constexpr auto array_to_span_v = meta_span_type_t<V>::from_array(V);
+constexpr auto array_to_span_v =
+  meta_span_type_t<V>::from_array(V);
 
 template <auto V>
 constexpr auto array_to_string_view_v =

@@ -18,12 +18,12 @@ consteval auto range_to_structured(const InputRange& range)
 {
   using ValueT = std::ranges::range_value_t<InputRange>;
   if constexpr (is_char_type_v<ValueT>) {
-    return define_static_string(range);
+    return reflect_cpp26::define_static_string(range);
   } else {
     auto converted = range | std::views::transform([](const auto& elem) {
       return to_structured(elem);
     });
-    return define_static_array(converted);
+    return reflect_cpp26::define_static_array(converted);
   }
 }
 
@@ -53,7 +53,8 @@ consteval auto pointer_to_structured(Pointer ptr)
   using T = std::remove_pointer_t<Pointer>;
   if constexpr (is_char_type_v<T>) {
     auto tail = std::ranges::find(ptr, std::unreachable_sentinel, '\0');
-    return define_static_string(std::basic_string_view{ptr, tail});
+    return reflect_cpp26::define_static_string(
+      std::basic_string_view{ptr, tail});
   } else {
     return ptr;
   }

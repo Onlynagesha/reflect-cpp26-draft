@@ -12,7 +12,7 @@
 #define REFLECT_CPP26_ENUM_ENABLE_BINARY_SEARCH_THRESHOLD 9999
 #endif
 
-#include <reflect_cpp26/enum.hpp>
+#include <reflect_cpp26/enum/impl/constants.hpp>
 
 namespace enum_constants = reflect_cpp26::impl::enum_constants;
 

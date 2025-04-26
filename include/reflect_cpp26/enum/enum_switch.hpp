@@ -9,8 +9,8 @@ template <class R, class E, class Func>
 constexpr auto enum_switch_is_invocable_r() -> bool
 {
   auto res = true;
-  enum_meta_for_each<E>([&res](auto e) {
-    return res &= std::is_invocable_r_v<R, Func, constant<[:e:]>>;
+  enum_for_each<E>([&res](auto e) {
+    return res &= std::is_invocable_r_v<R, Func, decltype(e)>;
   });
   return res;
 }
@@ -23,8 +23,8 @@ template <class E, class Func>
 constexpr auto enum_switch_invoke_result() -> std::meta::info
 {
   auto results = std::vector<std::meta::info>{};
-  enum_meta_for_each<E>([&results](auto e) {
-    results.push_back(^^std::invoke_result_t<Func, constant<[:e:]>>);
+  enum_for_each<E>([&results](auto e) {
+    results.push_back(^^std::invoke_result_t<Func, decltype(e)>);
   });
   return substitute(^^std::common_type, results);
 }
@@ -42,9 +42,9 @@ using enum_switch_invoke_result_t =
 template <class E, class Func>
 constexpr auto enum_switch_void(Func&& func, E value) -> void
 {
-  enum_meta_for_each<E>([&func, value](auto e) {
-    if ([:e:] == value) {
-      std::invoke(func, constant<[:e:]>{});
+  enum_for_each<E>([&func, value](auto e) {
+    if (e == value) {
+      std::invoke(func, e);
       return false; // false: Does not continue
     }
     return true; // true: Continues
@@ -55,9 +55,9 @@ template <class T, class E, class Func>
 constexpr auto enum_switch_optional(Func&& func, E value) -> std::optional<T>
 {
   auto res = std::optional<T>{};
-  enum_meta_for_each<E>([&func, value, &res](auto e) {
-    if ([:e:] == value) {
-      res = std::invoke(func, constant<[:e:]>{});
+  enum_for_each<E>([&func, value, &res](auto e) {
+    if (e == value) {
+      res = std::invoke(func, e);
       return false; // false: Does not continue
     }
     return true; // true: Continues
@@ -69,9 +69,9 @@ template <class T, class E, class Func>
 constexpr auto enum_switch_value(Func&& func, E value, T init)
   /* -> ResultT */
 {
-  enum_meta_for_each<E>([&func, value, &init](auto e) {
-    if ([:e:] == value) {
-      init = std::invoke(func, constant<[:e:]>{});
+  enum_for_each<E>([&func, value, &init](auto e) {
+    if (e == value) {
+      init = std::invoke(func, e);
       return false; // false: Does not continue
     }
     return true; // true: Continues

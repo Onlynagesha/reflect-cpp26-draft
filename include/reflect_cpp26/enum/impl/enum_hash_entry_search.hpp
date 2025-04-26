@@ -61,12 +61,12 @@ consteval auto make_enum_hash_entry_sparse_list()
 // Linear sorted list
 template <class E>
 constexpr auto enum_hash_entry_dense_list_v =
-  define_static_array(make_enum_hash_entry_list<E>());
+  reflect_cpp26::define_static_array(make_enum_hash_entry_list<E>());
 
 // Hash table
 template <class E>
 constexpr auto enum_hash_entry_sparse_list_v =
-  define_static_array(make_enum_hash_entry_sparse_list<E>());
+  reflect_cpp26::define_static_array(make_enum_hash_entry_sparse_list<E>());
 
 constexpr auto enum_hash_binary_search_with_collision(
   meta_span<enum_hash_entry> entries, std::string_view str)

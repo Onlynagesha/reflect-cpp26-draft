@@ -1,6 +1,7 @@
 #ifndef REFLECT_CPP26_TYPE_TRAITS_CLASS_TYPES_MEMBERWISE_PREDICATE_HPP
 #define REFLECT_CPP26_TYPE_TRAITS_CLASS_TYPES_MEMBERWISE_PREDICATE_HPP
 
+#include <reflect_cpp26/type_traits/class_types/flattenable.hpp>
 #include <reflect_cpp26/type_traits/function_types.hpp>
 #include <reflect_cpp26/type_traits/is_invocable.hpp>
 #include <reflect_cpp26/utils/concepts.hpp>

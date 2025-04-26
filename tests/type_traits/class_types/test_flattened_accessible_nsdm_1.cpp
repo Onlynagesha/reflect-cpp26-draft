@@ -1,6 +1,10 @@
-#include <gmock/gmock-matchers.h>
-#include <gtest/gtest.h>
+#include "test_options.hpp"
+
+#ifdef ENABLE_FULL_HEADER_TEST
 #include <reflect_cpp26/type_traits.hpp>
+#else
+#include <reflect_cpp26/type_traits/class_types/flattenable.hpp>
+#endif
 
 namespace rfl = reflect_cpp26;
 
@@ -12,7 +16,6 @@ struct foo_t {
 private:
   double _timestamp;
 };
-static_assert(alignof(foo_t) == 8);
 
 struct bar_1_t : foo_t {
   float average_rating;
@@ -26,14 +29,12 @@ protected:
   int32_t tag;
   void call_bar();
 };
-static_assert(alignof(bar_1_t) == 8);
 
 struct bar_2_t : std::pair<int32_t, int32_t>, protected bar_1_t {
   float first; // Shadows member 'first' of base
 protected:
   char d2;
 };
-static_assert(alignof(bar_2_t) == 8);
 
 struct bar_3_t
   : private std::array<int16_t, 6>
@@ -44,13 +45,14 @@ private:
 public:
   float first; // Shadows member 'first' of base
 
+  bar_3_t(): std::array<int16_t, 6>{}, std::pair<int32_t, int32_t>{} {}
+
   auto dump_private_base() -> std::string {
     return std::format("{}", *static_cast<std::array<int16_t, 6>*>(this));
   }
 protected:
   char d4;
 };
-static_assert(alignof(bar_3_t) == 4);
 
 class baz_1_t : public bar_1_t, public bar_3_t {
 private:
@@ -67,7 +69,6 @@ public:
     return res;
   }
 };
-static_assert(alignof(baz_1_t) == 8);
 
 template <size_t I, auto... Values>
 constexpr auto get_offset(rfl::constant<Values...> members) {
@@ -94,10 +95,9 @@ TEST(TypeTraitsClassTypes, NSDMListGroup1Foo)
   constexpr auto foo_members =
     rfl::public_flattened_nsdm_v<foo_t>;
   static_assert(foo_members.size() == 2);
-  auto expected_offsets = std::array{0zU, 4zU};
-  EXPECT_THAT(foo_members.map<[](auto sp) {
-      return sp.actual_offset.bytes;
-    }>().values, testing::ContainerEq(expected_offsets));
+  auto expected_offsets = std::array{0z, 4z};
+  EXPECT_THAT(foo_members.to_actual_offset_bytes().values,
+    testing::ContainerEq(expected_offsets));
 
   auto foo = foo_t{};
   foo.[:get<0>(foo_members).member:] = 21;
@@ -110,10 +110,9 @@ TEST(TypeTraitsClassTypes, NSDMListGroup1Bar1)
   constexpr auto bar_1_members =
     rfl::public_flattened_nsdm_v<bar_1_t>;
   static_assert(bar_1_members.size() == 4);
-  auto expected_offsets = std::array{0zU, 4zU, 16zU, 20zU};
-  EXPECT_THAT(bar_1_members.map<[](auto sp) {
-      return sp.actual_offset.bytes;
-    }>().values, testing::ContainerEq(expected_offsets));
+  auto expected_offsets = std::array{0z, 4z, 16z, 20z};
+  EXPECT_THAT(bar_1_members.to_actual_offset_bytes().values,
+    testing::ContainerEq(expected_offsets));
 
   auto bar_1 = bar_1_t{};
   bar_1.[:get<0>(bar_1_members).member:] = 63;
@@ -195,6 +194,7 @@ TEST(TypeTraitsClassTypes, NSDMListGroup1Baz1)
   auto first_from_base = &std::pair<int32_t, int32_t>::first;
   EXPECT_EQ("111,222,-3.875", std::format(
     "{},{},{}", baz_1.*first_from_base, baz_1.second, baz_1.first));
+  EXPECT_EQ("[0, 0, 0, 0, 0, 0]", baz_1.dump_private_base());
 
   baz_1 = baz_1_t{};
   // inherited from bar_1

@@ -1,6 +1,11 @@
-#include <gtest/gtest.h>
+#include "enum/enum_test_options.hpp"
+#include "enum/test_cases.hpp"
+
+#ifdef ENABLE_FULL_HEADER_TEST
 #include <reflect_cpp26/enum.hpp>
-#include "./test_cases.hpp"
+#else
+#include <reflect_cpp26/enum/enum_contains.hpp>
+#endif
 
 using namespace reflect_cpp26;
 
@@ -10,7 +15,7 @@ constexpr bool test_foo_signed_common()
   // Note: enum_contains(e) is not massively tested
   // since enum_contains<E>(i) forwards to it.
   static_assert(enum_contains(E::four));
-  static_assert(! enum_contains(static_cast<E>(-3)));
+  static_assert(NOT enum_contains(static_cast<E>(-3)));
 
   static_assert(enum_contains<E>(4));
   static_assert(enum_contains<E>(-1));
@@ -30,14 +35,14 @@ constexpr bool test_foo_signed_common()
   static_assert(enum_contains<E>(int16_t{-1}));
   static_assert(enum_contains<E>(int64_t{-2}));
 
-  static_assert(! enum_contains<E>(static_cast<uint8_t>(-1)));
-  static_assert(! enum_contains<E>(static_cast<uint16_t>(-2)));
-  static_assert(! enum_contains<E>(static_cast<uint32_t>(-1)));
-  static_assert(! enum_contains<E>(static_cast<uint64_t>(-2)));
+  static_assert(NOT enum_contains<E>(static_cast<uint8_t>(-1)));
+  static_assert(NOT enum_contains<E>(static_cast<uint16_t>(-2)));
+  static_assert(NOT enum_contains<E>(static_cast<uint32_t>(-1)));
+  static_assert(NOT enum_contains<E>(static_cast<uint64_t>(-2)));
 
-  static_assert(! enum_contains<E>(3));
-  static_assert(! enum_contains<E>(8u));
-  static_assert(! enum_contains<E>('0'));
+  static_assert(NOT enum_contains<E>(3));
+  static_assert(NOT enum_contains<E>(8u));
+  static_assert(NOT enum_contains<E>('0'));
   return true;
 }
 
@@ -57,18 +62,18 @@ static_assert(enum_contains<bar_unsigned>(13));
 static_assert(enum_contains<bar_unsigned>(14));
 static_assert(enum_contains<bar_unsigned>(0));
 
-static_assert(! enum_contains<bar_unsigned>(static_cast<uint8_t>(-1)));
-static_assert(! enum_contains<bar_unsigned>(static_cast<uint16_t>(-1)));
-static_assert(! enum_contains<bar_unsigned>(static_cast<uint64_t>(-1)));
+static_assert(NOT enum_contains<bar_unsigned>(static_cast<uint8_t>(-1)));
+static_assert(NOT enum_contains<bar_unsigned>(static_cast<uint16_t>(-1)));
+static_assert(NOT enum_contains<bar_unsigned>(static_cast<uint64_t>(-1)));
 
-static_assert(! enum_contains<bar_unsigned>(static_cast<int8_t>(-1)));
-static_assert(! enum_contains<bar_unsigned>(static_cast<int16_t>(-1)));
-static_assert(! enum_contains<bar_unsigned>(static_cast<int32_t>(-1)));
-static_assert(! enum_contains<bar_unsigned>(static_cast<int64_t>(-1)));
+static_assert(NOT enum_contains<bar_unsigned>(static_cast<int8_t>(-1)));
+static_assert(NOT enum_contains<bar_unsigned>(static_cast<int16_t>(-1)));
+static_assert(NOT enum_contains<bar_unsigned>(static_cast<int32_t>(-1)));
+static_assert(NOT enum_contains<bar_unsigned>(static_cast<int64_t>(-1)));
 
-static_assert(! enum_contains<bar_unsigned>(4));
-static_assert(! enum_contains<bar_unsigned>(15u));
-static_assert(! enum_contains<bar_unsigned>(L'1'));
+static_assert(NOT enum_contains<bar_unsigned>(4));
+static_assert(NOT enum_contains<bar_unsigned>(15u));
+static_assert(NOT enum_contains<bar_unsigned>(L'1'));
 
 static_assert(enum_contains<baz_signed>(2));
 static_assert(enum_contains<baz_signed>(-1));
@@ -80,14 +85,14 @@ static_assert(enum_contains<baz_signed>(int8_t{-1}));
 static_assert(enum_contains<baz_signed>(int32_t{-1}));
 static_assert(enum_contains<baz_signed>(int64_t{-1}));
 
-static_assert(! enum_contains<baz_signed>(static_cast<uint8_t>(-1)));
-static_assert(! enum_contains<baz_signed>(static_cast<uint16_t>(-1)));
-static_assert(! enum_contains<baz_signed>(static_cast<uint32_t>(-1)));
-static_assert(! enum_contains<baz_signed>(static_cast<uint64_t>(-1)));
+static_assert(NOT enum_contains<baz_signed>(static_cast<uint8_t>(-1)));
+static_assert(NOT enum_contains<baz_signed>(static_cast<uint16_t>(-1)));
+static_assert(NOT enum_contains<baz_signed>(static_cast<uint32_t>(-1)));
+static_assert(NOT enum_contains<baz_signed>(static_cast<uint64_t>(-1)));
 
-static_assert(! enum_contains<baz_signed>(4));
-static_assert(! enum_contains<baz_signed>(5uL));
-static_assert(! enum_contains<baz_signed>(u'6'));
+static_assert(NOT enum_contains<baz_signed>(4));
+static_assert(NOT enum_contains<baz_signed>(5uL));
+static_assert(NOT enum_contains<baz_signed>(u'6'));
 
 static_assert(enum_contains<qux_unsigned>(0));
 static_assert(enum_contains<qux_unsigned>(static_cast<uint16_t>(-1)));
@@ -96,42 +101,42 @@ static_assert(enum_contains<qux_unsigned>(3));
 static_assert(enum_contains<qux_unsigned>(4));
 static_assert(enum_contains<qux_unsigned>(2));
 
-static_assert(! enum_contains<qux_unsigned>(int8_t{-1}));
-static_assert(! enum_contains<qux_unsigned>(int16_t{-1}));
-static_assert(! enum_contains<qux_unsigned>(int32_t{-1}));
-static_assert(! enum_contains<qux_unsigned>(int64_t{-1}));
+static_assert(NOT enum_contains<qux_unsigned>(int8_t{-1}));
+static_assert(NOT enum_contains<qux_unsigned>(int16_t{-1}));
+static_assert(NOT enum_contains<qux_unsigned>(int32_t{-1}));
+static_assert(NOT enum_contains<qux_unsigned>(int64_t{-1}));
 
-static_assert(! enum_contains<qux_unsigned>(static_cast<uint8_t>(-1)));
-static_assert(! enum_contains<qux_unsigned>(static_cast<uint32_t>(-1)));
-static_assert(! enum_contains<qux_unsigned>(static_cast<uint64_t>(-1)));
+static_assert(NOT enum_contains<qux_unsigned>(static_cast<uint8_t>(-1)));
+static_assert(NOT enum_contains<qux_unsigned>(static_cast<uint32_t>(-1)));
+static_assert(NOT enum_contains<qux_unsigned>(static_cast<uint64_t>(-1)));
 
-static_assert(! enum_contains<qux_unsigned>(5LL));
-static_assert(! enum_contains<qux_unsigned>(U'6'));
+static_assert(NOT enum_contains<qux_unsigned>(5LL));
+static_assert(NOT enum_contains<qux_unsigned>(U'6'));
 
-static_assert(! enum_contains<empty>(-1));
-static_assert(! enum_contains<empty>(0));
+static_assert(NOT enum_contains<empty>(-1));
+static_assert(NOT enum_contains<empty>(0));
 
 static_assert(enum_contains<single>(233));
 
-static_assert(! enum_contains<single>(-1));
-static_assert(! enum_contains<single>(0));
-static_assert(! enum_contains<single>(u8'2'));
+static_assert(NOT enum_contains<single>(-1));
+static_assert(NOT enum_contains<single>(0));
+static_assert(NOT enum_contains<single>(u8'2'));
 
 static_assert(enum_contains<single_rep>(233));
 
-static_assert(! enum_contains<single_rep>(-1));
-static_assert(! enum_contains<single_rep>(0));
-static_assert(! enum_contains<single_rep>(u8'3'));
+static_assert(NOT enum_contains<single_rep>(-1));
+static_assert(NOT enum_contains<single_rep>(0));
+static_assert(NOT enum_contains<single_rep>(u8'3'));
 
-static_assert(! enum_contains<color>(int8_t{-1}));
-static_assert(! enum_contains<color>(int16_t{-1}));
-static_assert(! enum_contains<color>(int32_t{-1}));
-static_assert(! enum_contains<color>(int64_t{-1}));
+static_assert(NOT enum_contains<color>(int8_t{-1}));
+static_assert(NOT enum_contains<color>(int16_t{-1}));
+static_assert(NOT enum_contains<color>(int32_t{-1}));
+static_assert(NOT enum_contains<color>(int64_t{-1}));
 
 static_assert(enum_contains<color>(static_cast<uint8_t>(-1)));
 static_assert(enum_contains<color>(static_cast<uint16_t>(-1)));
-static_assert(! enum_contains<color>(static_cast<uint32_t>(-1)));
-static_assert(! enum_contains<color>(static_cast<uint64_t>(-1)));
+static_assert(NOT enum_contains<color>(static_cast<uint32_t>(-1)));
+static_assert(NOT enum_contains<color>(static_cast<uint64_t>(-1)));
 
 static_assert(enum_contains<color>(0x6A5ACD));
 static_assert(enum_contains<color>(0xFF7F50));
@@ -275,10 +280,10 @@ static_assert(enum_contains<color>(0x90EE90));
 static_assert(enum_contains<color>(0x9370DB));
 static_assert(enum_contains<color>(0xFF69B4));
 
-static_assert(! enum_contains<terminal_color>(int8_t{-1}));
-static_assert(! enum_contains<terminal_color>(int16_t{-1}));
-static_assert(! enum_contains<terminal_color>(int32_t{-1}));
-static_assert(! enum_contains<terminal_color>(int64_t{-1}));
+static_assert(NOT enum_contains<terminal_color>(int8_t{-1}));
+static_assert(NOT enum_contains<terminal_color>(int16_t{-1}));
+static_assert(NOT enum_contains<terminal_color>(int32_t{-1}));
+static_assert(NOT enum_contains<terminal_color>(int64_t{-1}));
 
 static_assert(enum_contains<terminal_color>(' '));
 static_assert(enum_contains<terminal_color>(L'!'));
@@ -305,7 +310,7 @@ static_assert(enum_contains<terminal_color>(34));
 
 static_assert(enum_contains<hash_collision>(0));
 static_assert(enum_contains<hash_collision>(1));
-static_assert(! enum_contains<hash_collision>(-1));
+static_assert(NOT enum_contains<hash_collision>(-1));
 
 TEST(EnumContainsInteger, StaticAll) {
   EXPECT_TRUE(true); // All test cases done by static assertions above.

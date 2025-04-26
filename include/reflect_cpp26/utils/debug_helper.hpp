@@ -35,7 +35,7 @@ consteval auto make_type_description() -> std::string
 
 template <class T>
 constexpr auto type_description_v =
-  define_static_string(make_type_description<T>());
+  reflect_cpp26::define_static_string(make_type_description<T>());
 } // namespace impl
 
 template <class T>

@@ -7,16 +7,18 @@
 
 namespace reflect_cpp26::impl {
 template <class E>
-constexpr bool enum_name_has_hash_collision()
+consteval bool enum_name_has_hash_collision()
 {
-  auto hash_values = std::array<uint64_t, enum_count_v<E>>{};
-  enum_meta_for_each<E>([&hash_values](size_t index, auto ec) {
-    hash_values[index] = bkdr_hash64(std::meta::identifier_of(ec));
-  });
-  std::ranges::sort(hash_values);
-  auto zero_pos = std::ranges::find(hash_values, 0);
-  auto collision_pos = std::ranges::adjacent_find(hash_values);
-  return zero_pos != hash_values.end() || collision_pos != hash_values.end();
+  if constexpr (enum_count<E>() != 0) {
+    auto hash_values = enum_meta_entries<E>().map([](auto ec) {
+      return bkdr_hash64(identifier_of(ec.value));
+    });
+    std::ranges::sort(hash_values);
+    return hash_values[0] == 0
+      || std::ranges::adjacent_find(hash_values) != hash_values.end();
+  } else {
+    return false;
+  }
 }
 
 // Hash collision if either happens:

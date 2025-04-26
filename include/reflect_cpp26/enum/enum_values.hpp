@@ -10,7 +10,7 @@ namespace reflect_cpp26 {
 namespace impl {
 template <class E, enum_entry_order Order>
 constexpr auto enum_values_v =
-  enum_meta_entries<E, Order>().template map<splice_to_value>();
+  enum_meta_entries<E, Order>().template map<extract_meta_value>();
 } // namespace impl
 
 /**

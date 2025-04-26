@@ -33,23 +33,42 @@ struct flattened_data_member_spec {
   /**
    * Actual offset of member relative to T.
    */
-  // TODO: Change to std::meta::member_offset as of P2996r8
-  std::meta::member_offsets actual_offset;
+  std::meta::member_offset actual_offset;
 };
 
 template <flattened_data_member_spec... Members>
 struct flattened_data_member_spec_constant : constant<Members...> {
   using base = constant<Members...>;
 
-  static consteval auto to_members()
+  static constexpr auto to_members()
   {
     constexpr auto map_fn = [](auto cur) { return cur.value.member; };
     return base::template map<map_fn>();
   }
 
-  static consteval auto to_actual_offsets()
+  static constexpr auto to_actual_offsets()
   {
     constexpr auto map_fn = [](auto cur) { return cur.value.actual_offset; };
+    return base::template map<map_fn>();
+  }
+
+  static constexpr auto to_actual_offset_bytes()
+  {
+    constexpr auto map_fn = [](auto cur) {
+      if (is_bit_field(cur.value.member)) {
+        compile_error("Invalid transformation with bit-fields.");
+      }
+      return cur.value.actual_offset.bytes;
+    };
+    return base::template map<map_fn>();
+  }
+
+  static constexpr auto to_actual_offset_bits()
+  {
+    constexpr auto map_fn = [](auto cur) {
+      auto a = cur.value.actual_offset;
+      return a.bytes * CHAR_BIT + a.bits;
+    };
     return base::template map<map_fn>();
   }
 };
@@ -85,18 +104,14 @@ consteval auto walk_public_nsdm() -> std::meta::info
       if (is_virtual(base.value)) {
         compile_error("Virtual inheritance is disallowed.");
       }
-      // TODO: Use correct base_offset
-      // after compiler bug of offset_of being fixed
-      constexpr auto base_offset = 0zU;
-      // constexpr auto base_offset = offset_of(base.value).bytes;
-      using FromBase = public_flattened_nsdm_t<[:type_of(base.value):]>;
-      constexpr auto B = dealias(^^FromBase);
-      REFLECT_CPP26_EXPAND(template_arguments_of(B)).for_each(
-        [&members](auto sp) {
-          auto cur_member_spec = extract<flattened_data_member_spec>(sp.value);
-          cur_member_spec.actual_offset.bytes += base_offset;
-          members.push_back(std::meta::reflect_value(cur_member_spec));
-        });
+      constexpr auto base_offset = offset_of(base.value).bytes;
+      constexpr auto from_base =
+        public_flattened_nsdm_v<[:type_of(base.value):]>;
+
+      from_base.for_each([&members](flattened_data_member_spec sp) {
+        sp.actual_offset.bytes += base_offset;
+        members.push_back(std::meta::reflect_value(sp));
+      });
     });
   REFLECT_CPP26_EXPAND(public_direct_nsdm_of(^^T))
     .for_each([&members](auto cur_member) {

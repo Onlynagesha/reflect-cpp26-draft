@@ -1,6 +1,11 @@
-#include <gtest/gtest.h>
+#include "enum/enum_test_options.hpp"
+#include "enum/test_cases.hpp"
+
+#ifdef ENABLE_FULL_HEADER_TEST
 #include <reflect_cpp26/enum.hpp>
-#include "./test_cases.hpp"
+#else
+#include <reflect_cpp26/enum/enum_cast.hpp>
+#endif
 
 using namespace reflect_cpp26;
 

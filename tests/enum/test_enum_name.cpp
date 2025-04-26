@@ -1,6 +1,12 @@
 #include "enum/enum_test_options.hpp"
 #include "enum/test_cases.hpp"
 
+#ifdef ENABLE_FULL_HEADER_TEST
+#include <reflect_cpp26/enum.hpp>
+#else
+#include <reflect_cpp26/enum/enum_names.hpp>
+#endif
+
 #ifdef ENABLE_BINARY_SEARCH_CHECK
 #define TEST_SUITE_NAME EnumNameBinarySearch
 #endif

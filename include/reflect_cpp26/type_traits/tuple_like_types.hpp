@@ -266,7 +266,7 @@ using elementwise_zip_substitute_t =
  */
 template <template <class...> class Transform, tuple_like T, tuple_like... Ts>
 using elementwise_zip_transform_t =
-  type_tuple_transform_t<extract_type,
+  type_tuple_transform_t<extract_traits_type,
     [:impl::elementwise_zip_substitute_refl<
       Transform, std::remove_cvref_t<T>, std::remove_cvref_t<Ts>...>:]>;
 
@@ -278,7 +278,7 @@ using elementwise_zip_transform_t =
  */
 template <template <class...> class Transform, tuple_like T, tuple_like... Ts>
 constexpr auto elementwise_zip_transform_v =
-  type_tuple_transform_v<extract_value,
+  type_tuple_transform_v<extract_traits_value,
     [:impl::elementwise_zip_substitute_refl<
       Transform, std::remove_cvref_t<T>, std::remove_cvref_t<Ts>...>:]>;
 } // namespace reflect_cpp26

@@ -6,22 +6,22 @@
 // Note: Keyword 'not' may be inavailable in MSVC.
 #define NOT !
 
-#ifdef ENABLE_STATIC_CHECK
-#define ASSERT_EQ_STATIC(expected, actual) static_assert(expected == actual)
-#define EXPECT_EQ_STATIC(expected, actual) static_assert(expected == actual)
-#define ASSERT_NE_STATIC(expected, actual) static_assert(expected != actual)
-#define EXPECT_NE_STATIC(expected, actual) static_assert(expected != actual)
-#define ASSERT_FALSE_STATIC(cond) static_assert(!(cond))
-#define EXPECT_FALSE_STATIC(cond) static_assert(!(cond))
-#define ASSERT_TRUE_STATIC(cond) static_assert(cond)
-#define EXPECT_TRUE_STATIC(cond) static_assert(cond)
+#ifdef ENABLE_STATIC_TEST
+#define ASSERT_EQ_STATIC(expected, ...) static_assert(expected == (__VA_ARGS__))
+#define EXPECT_EQ_STATIC(expected, ...) static_assert(expected == (__VA_ARGS__))
+#define ASSERT_NE_STATIC(expected, ...) static_assert(expected != (__VA_ARGS__))
+#define EXPECT_NE_STATIC(expected, ...) static_assert(expected != (__VA_ARGS__))
+#define ASSERT_FALSE_STATIC(...) static_assert(!(__VA_ARGS__))
+#define EXPECT_FALSE_STATIC(...) static_assert(!(__VA_ARGS__))
+#define ASSERT_TRUE_STATIC(...) static_assert(__VA_ARGS__)
+#define EXPECT_TRUE_STATIC(...) static_assert(__VA_ARGS__)
 #else
-#define ASSERT_EQ_STATIC(expected, actual) ASSERT_EQ(expected, actual)
-#define EXPECT_EQ_STATIC(expected, actual) EXPECT_EQ(expected, actual)
-#define ASSERT_NE_STATIC(expected, actual) ASSERT_NE(expected, actual)
-#define EXPECT_NE_STATIC(expected, actual) EXPECT_NE(expected, actual)
-#define ASSERT_FALSE_STATIC(cond) ASSERT_FALSE(cond)
-#define EXPECT_FALSE_STATIC(cond) EXPECT_FALSE(cond)
-#define ASSERT_TRUE_STATIC(cond) ASSERT_TRUE(cond)
-#define EXPECT_TRUE_STATIC(cond) EXPECT_TRUE(cond)
+#define ASSERT_EQ_STATIC(expected, ...) ASSERT_EQ(expected, (__VA_ARGS__))
+#define EXPECT_EQ_STATIC(expected, ...) EXPECT_EQ(expected, (__VA_ARGS__))
+#define ASSERT_NE_STATIC(expected, ...) ASSERT_NE(expected, (__VA_ARGS__))
+#define EXPECT_NE_STATIC(expected, ...) EXPECT_NE(expected, (__VA_ARGS__))
+#define ASSERT_FALSE_STATIC(...) ASSERT_FALSE((__VA_ARGS__))
+#define EXPECT_FALSE_STATIC(...) EXPECT_FALSE((__VA_ARGS__))
+#define ASSERT_TRUE_STATIC(...) ASSERT_TRUE((__VA_ARGS__))
+#define EXPECT_TRUE_STATIC(...) EXPECT_TRUE((__VA_ARGS__))
 #endif

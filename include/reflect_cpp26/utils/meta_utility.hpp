@@ -98,6 +98,14 @@ consteval auto extract(constant<V>) {
   return std::meta::extract<[:type_of(V):]>(V);
 }
 
+struct extract_meta_value_t {
+  template <std::meta::info V>
+  static consteval auto operator()(constant<V> v) {
+    return extract(v);
+  }
+};
+constexpr auto extract_meta_value = extract_meta_value_t{};
+
 /**
  * Equivalent to extract<T>(substitute(templ, {templ_params})).
  */
@@ -126,16 +134,6 @@ consteval auto substitute(std::meta::info templ, Args... templ_params)
   -> std::meta::info {
   return std::meta::substitute(templ, {templ_params...});
 }
-
-// -------- Splicing helpers --------
-
-struct splice_to_value_t {
-  template <std::meta::info V>
-  static constexpr auto operator()(constant<V>) {
-    return [:V:];
-  }
-};
-constexpr auto splice_to_value = splice_to_value_t{};
 } // namespace reflect_cpp26
 
 #endif // REFLECT_CPP26_UTILS_META_UTILITY_HPP

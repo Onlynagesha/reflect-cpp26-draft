@@ -332,7 +332,8 @@ struct is_not_null_validator_t
   }
 
   template <class T>
-  static auto make_error_message(const std::optional<T>&) -> std::string {
+  static constexpr auto make_error_message(const std::optional<T>&)
+    -> std::string {
     return "Expects std::optional to be non-null.";
   }
 };
@@ -784,12 +785,12 @@ constexpr bool validate_members(const T& obj, std::string* error_output)
       check_validator_is_invocable(cur_annotation, cur_value);
 
       res &= cur_annotation.test(cur_value);
-      if (!res && error_output != nullptr) {
-        *error_output += "Invalid member '";
+    if (!res && error_output != nullptr) {
+      *error_output += "Invalid member '";
         *error_output += identifier_of(m.value);
-        *error_output += "': ";
+      *error_output += "': ";
         *error_output += cur_annotation.make_error_message(cur_value);
-      }
+    }
       return res; // Stops on single violation
     });
     return res; // Stops on single violation

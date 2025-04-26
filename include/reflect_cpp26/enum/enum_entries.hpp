@@ -3,8 +3,8 @@
 
 #include <reflect_cpp26/enum/enum_count.hpp>
 #include <reflect_cpp26/enum/enum_for_each.hpp>
-#include <reflect_cpp26/enum/enum_switch.hpp>
 #include <algorithm>
+#include <span>
 #include <utility>
 
 namespace reflect_cpp26 {

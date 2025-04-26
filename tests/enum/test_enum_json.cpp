@@ -3,9 +3,14 @@
 // whether the complete JSON string is generated in compile-time
 // (which is unexpected behavior).
 
-#include <gtest/gtest.h>
+#include "enum/enum_test_options.hpp"
+#include "enum/test_cases.hpp"
+
+#ifdef ENABLE_FULL_HEADER_TEST
 #include <reflect_cpp26/enum.hpp>
-#include "./test_cases.hpp"
+#else
+#include <reflect_cpp26/enum/enum_json.hpp>
+#endif
 
 using namespace reflect_cpp26;
 

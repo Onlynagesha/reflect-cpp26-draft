@@ -1,18 +1,23 @@
-#include <gtest/gtest.h>
+#include "enum/enum_test_options.hpp"
+#include "enum/test_cases.hpp"
+
+#ifdef ENABLE_FULL_HEADER_TEST
 #include <reflect_cpp26/enum.hpp>
-#include "./test_cases.hpp"
+#else
+#include <reflect_cpp26/enum/enum_contains.hpp>
+#endif
 
 using namespace reflect_cpp26;
 
 template <class E>
 constexpr bool test_invalid_cases_common()
 {
-  static_assert(! enum_contains<E>("ZERO"));
-  static_assert(! enum_contains<E>("hello_world"));
-  static_assert(! enum_contains<E>(" zero "));
-  static_assert(! enum_contains<E>("0"));
-  static_assert(! enum_contains<E>(""));
-  static_assert(! enum_contains<E>("-"));
+  static_assert(NOT enum_contains<E>("ZERO"));
+  static_assert(NOT enum_contains<E>("hello_world"));
+  static_assert(NOT enum_contains<E>(" zero "));
+  static_assert(NOT enum_contains<E>("0"));
+  static_assert(NOT enum_contains<E>(""));
+  static_assert(NOT enum_contains<E>("-"));
   return true;
 }
 
@@ -56,8 +61,8 @@ static_assert(enum_contains<baz_signed>("ling"));
 static_assert(enum_contains<baz_signed>("fuyi"));
 
 static_assert(test_invalid_cases_common<baz_signed>());
-static_assert(! enum_contains<baz_signed>("one"));
-static_assert(! enum_contains<baz_signed>("si"));
+static_assert(NOT enum_contains<baz_signed>("one"));
+static_assert(NOT enum_contains<baz_signed>("si"));
 
 static_assert(enum_contains<qux_unsigned>("er"));
 static_assert(enum_contains<qux_unsigned>("fuyi"));
@@ -67,16 +72,16 @@ static_assert(enum_contains<qux_unsigned>("ling"));
 static_assert(enum_contains<qux_unsigned>("si"));
 
 static_assert(test_invalid_cases_common<qux_unsigned>());
-static_assert(! enum_contains<qux_unsigned>("3"));
-static_assert(! enum_contains<qux_unsigned>("zero"));
+static_assert(NOT enum_contains<qux_unsigned>("3"));
+static_assert(NOT enum_contains<qux_unsigned>("zero"));
 
 static_assert(test_invalid_cases_common<empty>());
-static_assert(! enum_contains<empty>("zero"));
-static_assert(! enum_contains<empty>("invalid"));
+static_assert(NOT enum_contains<empty>("zero"));
+static_assert(NOT enum_contains<empty>("invalid"));
 
 static_assert(enum_contains<single>("value"));
 static_assert(test_invalid_cases_common<single>());
-static_assert(! enum_contains<single>("233"));
+static_assert(NOT enum_contains<single>("233"));
 
 static_assert(enum_contains<single_rep>("laugh"));
 static_assert(enum_contains<single_rep>("hahaha"));
@@ -86,7 +91,7 @@ static_assert(enum_contains<single_rep>("again"));
 static_assert(enum_contains<single_rep>("unstoppable"));
 
 static_assert(test_invalid_cases_common<single_rep>());
-static_assert(! enum_contains<single_rep>("value"));
+static_assert(NOT enum_contains<single_rep>("value"));
 
 static_assert(enum_contains<color>("hot_pink"));
 static_assert(enum_contains<color>("purple"));
@@ -249,7 +254,7 @@ static_assert(enum_contains<terminal_color>("white"));
 static_assert(enum_contains<terminal_color>("magenta"));
 
 static_assert(test_invalid_cases_common<terminal_color>());
-static_assert(! enum_contains<terminal_color>("fuchsia"));
+static_assert(NOT enum_contains<terminal_color>("fuchsia"));
 
 static_assert(enum_contains<hash_collision>("_wSYZDRpiQJf8Rfv"));
 static_assert(enum_contains<hash_collision>("_cuFFJIHGp_jNJKS"));

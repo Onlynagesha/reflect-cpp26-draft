@@ -112,6 +112,7 @@ consteval auto make_enum_value_entry_list() -> std::vector<enum_value_entry>
 {
   static_assert(in_range<uint16_t>(enum_count_v<E>),
     "Enum types with more than 65535 entries are not supported.");
+
   auto entry_list = std::vector<enum_value_entry>{};
   enum_meta_for_each<E>([&entry_list](auto index, auto ec) {
     auto value = enum_value_entry::make_value([:ec:]);
@@ -160,13 +161,15 @@ struct enum_value_entry_table {
   size_t continuous_head = 0;
   size_t continuous_tail = 0;
 
-  constexpr enum_value_entry_table(meta_span<enum_value_entry> entries)
-    : entries(entries)
+  static constexpr auto make(meta_span<enum_value_entry> entries)
+    -> enum_value_entry_table
   {
+    auto res = enum_value_entry_table{};
+    res.entries = entries;
     auto n = entries.size();
     if (n <= 1) {
-      continuous_tail = n;
-      return;
+      res.continuous_tail = n;
+      return res;
     }
     size_t max_len_head = 0, max_len_tail = 0;
     size_t cur_head = 0, cur_tail = 1;
@@ -182,8 +185,9 @@ struct enum_value_entry_table {
       cur_head = cur_tail;
       cur_tail += 1;
     }
-    continuous_head = max_len_head;
-    continuous_tail = max_len_tail;
+    res.continuous_head = max_len_head;
+    res.continuous_tail = max_len_tail;
+    return res;
   }
 
   constexpr size_t sparse_left_size() const {
@@ -220,8 +224,12 @@ struct enum_value_entry_table {
 };
 
 template <class E>
-constexpr auto enum_value_entry_table_v =
-  enum_value_entry_table{define_static_array(make_enum_value_entry_list<E>())};
+constexpr auto enum_value_entry_table_entries_v =
+  reflect_cpp26::define_static_array(make_enum_value_entry_list<E>());
+
+template <class E>
+constexpr auto enum_value_entry_table_v = enum_value_entry_table::make(
+  enum_value_entry_table_entries_v<E>);
 } // namespace reflect_cpp26::impl
 
 #endif // REFLECT_CPP26_ENUM_IMPL_ENUM_ENTRY_HPP

@@ -4,11 +4,16 @@ add_requires("gtest", {
     config = { main = true }
 })
 
--- Uses static assertion for supported unit tests
+-- Uses static assertion for supported unit test cases
 option("static-test")
   set_default(false)
   set_showmenu(true)
-  add_defines("ENABLE_STATIC_CHECK")
+  add_defines("ENABLE_STATIC_TEST")
+
+option("full-header-test")
+  set_default(false)
+  set_showmenu(true)
+  add_defines("ENABLE_FULL_HEADER_TEST")
 
 function make_test_case(path, suffix, callback)
   local _, last_slash_index = string.find(path, ".*/")
@@ -62,14 +67,20 @@ meta_test_cases_without_variant = {
   "tests/type_traits/test_tuple_like_types",
   "tests/type_traits/class_types/test_member_pointers",
   "tests/type_traits/class_types/test_member_reflections",
-  -- "tests/type_traits/class_types/test_flattened_accessible_nsdm_1",
+  "tests/type_traits/class_types/test_flattened_accessible_nsdm_1",
   "tests/type_traits/class_types/test_flattened_accessible_nsdm_2",
   "tests/type_traits/class_types/test_flattenable_types",
   "tests/type_traits/class_types/test_structured_types",
   "tests/type_traits/class_types/test_class_memberwise_predicate",
   -- Enum
   "tests/enum/impl/test_hash_collision_check",
-  "tests/enum/test_enum_misc",
+  "tests/enum/test_enum_count",
+  "tests/enum/test_enum_meta_entries",
+  "tests/enum/test_enum_values",
+  "tests/enum/test_enum_for_each",
+  "tests/enum/test_enum_hash",
+  "tests/enum/test_enum_entries",
+  "tests/enum/test_enum_names",
   "tests/enum/test_enum_switch",
   "tests/enum/test_enum_json",
   "tests/enum/test_enum_json_static",

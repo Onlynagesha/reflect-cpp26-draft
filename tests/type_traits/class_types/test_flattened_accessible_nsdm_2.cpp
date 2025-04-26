@@ -1,6 +1,10 @@
-#include <gmock/gmock-matchers.h>
-#include <gtest/gtest.h>
+#include "test_options.hpp"
+
+#ifdef ENABLE_FULL_HEADER_TEST
 #include <reflect_cpp26/type_traits.hpp>
+#else
+#include <reflect_cpp26/type_traits/class_types/flattenable.hpp>
+#endif
 
 namespace rfl = reflect_cpp26;
 
@@ -39,11 +43,10 @@ TEST(TypeTraitsClassTypes, NSDMListGroup2References)
   constexpr auto ref_members =
     rfl::public_flattened_nsdm_v<references_t>;
   static_assert(ref_members.size() == 4);
-  auto expected_offsets = std::array{
-    0zU, sizeof(void*), sizeof(void*) * 2, sizeof(void*) * 3};
-  EXPECT_THAT(ref_members.map<[](auto sp) {
-      return sp.value.actual_offset.bytes;
-    }>().values, testing::ContainerEq(expected_offsets));
+  auto expected_offsets = std::array<ptrdiff_t, 4>{
+    0, sizeof(void*), sizeof(void*) * 2, sizeof(void*) * 3};
+  EXPECT_THAT(ref_members.to_actual_offset_bytes().values,
+    testing::ContainerEq(expected_offsets));
 
   auto [i, ll, f, d] = std::tuple{1, 2LL, 3.5f, 4.75};
   auto foo = references_t{i, ll, f, d};

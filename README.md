@@ -44,8 +44,3 @@ Validators to be implemented:
 | `substr_matches_regex` | | |
 | `has_subsequence` | | |
 | `is_subsequence_of` | | |
-
-# Test Cases Failed Due to Compiler Bug
-
-* `tests/type_traits/class_types/test_flattened_accessible_nsdm_1.cpp`
-  * `std::meta::offset_of()` is not usable for base relationship.

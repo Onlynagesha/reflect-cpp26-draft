@@ -3,6 +3,7 @@
 
 #include <reflect_cpp26/type_traits/is_invocable.hpp>
 #include <reflect_cpp26/type_traits/template_instance.hpp>
+#include <reflect_cpp26/utils/concepts.hpp>
 #include <array>
 #include <limits>
 #include <span>
@@ -168,9 +169,8 @@ public:
   {
     using ResultT = std::common_type_t<
       std::invoke_result_t<Func, Derived<Vs>>...>;
-    using ResultArrayT = std::array<
-      ResultT, sizeof...(Vs)>;
-    return ResultArrayT{std::invoke(body, Derived<Vs>{})...};
+    return std::array<ResultT, sizeof...(Vs)>{
+      std::invoke(body, Derived<Vs>{})...};
   }
 
   /**
@@ -187,17 +187,17 @@ public:
    * with each element converted to common type.
    */
   template <class Func>
-  static constexpr auto filter(Func&& body)
+  static constexpr auto filter(Func&& predicate)
   {
     using ValueT = std::common_type_t<decltype(Vs)...>;
     auto res = std::vector<ValueT>{};
     res.reserve(sizeof...(Vs));
-    auto try_add = [&body, &res](auto cur) {
-      if (std::invoke(body, cur)) {
-        res.emplace_back(cur.value);
+
+    for_each([&predicate, &res](auto V) {
+      if (std::invoke(predicate, V)) {
+        res.emplace_back(V.value);
       }
-    };
-    (try_add(Derived<Vs>{}), ...);
+    });
     return res;
   }
 
@@ -223,8 +223,7 @@ public:
    *   return result
    */
   template <class Func, class T>
-  static constexpr auto reduce(Func&& body, const T& init)
-  {
+  static constexpr auto reduce(Func&& body, const T& init) {
     return reduce_impl<0>(body, init);
   }
 
@@ -288,6 +287,41 @@ public:
   }
 
   /**
+   * Checks whether all of Vs... meets the given predicate.
+   */
+  template <class Func>
+  static constexpr auto all_of(Func&& predicate) -> bool
+  {
+    auto res = true;
+    for_each([&predicate, &res](auto V) {
+      return res &= std::invoke(predicate, V);
+    });
+    return res;
+  }
+
+  /**
+   * Checks whether at least one of Vs... meets the given predicate.
+   */
+  template <class Func>
+  static constexpr auto any_of(Func&& predicate) -> bool
+  {
+    auto res = false;
+    for_each([&predicate, &res](auto V) {
+      res |= std::invoke(predicate, V);
+      return !res; // Stops if res == true
+    });
+    return res;
+  }
+
+  /**
+   * Checks whether none of Vs... meets the given predicate.
+   */
+  template <class Func>
+  static constexpr auto none_of(Func&& predicate) -> bool {
+    return !any_of(std::forward<Func>(predicate));
+  }
+
+  /**
    * How many values contained.
    */
   static constexpr auto size() {
@@ -344,8 +378,7 @@ struct constant<V, Rest...> : impl::constant_base<constant, V, Rest...> {
 /**
  * Helper for making constant with tag types.
  */
-template <class... Args>
-  requires (std::is_empty_v<Args> && ...)
+template <empty_type... Args>
 constexpr auto tags_constant() {
   return constant<Args{}...>{};
 }

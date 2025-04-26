@@ -21,7 +21,8 @@ template <class LazyFn>
 constexpr auto validation_error_message(LazyFn fn) -> std::string
 {
   auto msg = std::string{};
-  annots::validate_members(std::invoke(fn), &msg);
+  auto obj = std::invoke(fn);
+  annots::validate_members(obj, &msg);
   return msg;
 }
 
@@ -29,6 +30,7 @@ template <class LazyFn>
 constexpr auto validation_full_error_message(LazyFn fn) -> std::string
 {
   auto msg = std::string{};
-  annots::validate_members_full(std::invoke(fn), &msg);
+  auto obj = std::invoke(fn);
+  annots::validate_members_full(obj, &msg);
   return msg;
 }

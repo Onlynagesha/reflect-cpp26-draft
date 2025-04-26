@@ -3,12 +3,12 @@
 
 namespace reflect_cpp26 {
 template <class Traits>
-struct extract_type {
+struct extract_traits_type {
   using type = typename Traits::type;
 };
 
 template <class Traits>
-struct extract_value {
+struct extract_traits_value {
   static constexpr auto value = Traits::value;
 };
 } // namespace reflect_cpp26
