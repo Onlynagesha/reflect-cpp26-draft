@@ -4,6 +4,11 @@
 # Build & Run Test Cases
 This project uses [XMake](https://xmake.io) as build system.
 ```
+# Optional parameters:
+# --full-header-test=[yn]: Enables full header test
+#   (e.g. <reflect_cpp26/module.hpp> is included instead of <reflect_cpp26/module/component.hpp>)
+# --static-test=[yn]: Enables static assertion test
+
 xmake f -m <debug|release> \
         --sdk=<llvm-root> \
         --cxxflags="-stdlib=libc++" \
@@ -24,7 +29,7 @@ LD_LIBRARY_PATH=<path-to-libc++> xmake run --group=tests/**
   * Case-insensitive enum name comparison
 * Validators
   * (see the table below)
-  * Recursive validation (see the example below)
+  * Recursive validation
   * String validators with case-insensitive comparison
   * Validation on invariant relation between multiple members
   * Non-intrusive validator annotation

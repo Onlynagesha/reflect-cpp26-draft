@@ -3,6 +3,7 @@
 
 #include <reflect_cpp26/enum/enum_count.hpp>
 #include <reflect_cpp26/enum/enum_for_each.hpp>
+#include <reflect_cpp26/utils/define_static_values.hpp>
 #include <algorithm>
 #include <span>
 #include <utility>
@@ -18,7 +19,8 @@ consteval auto make_enum_entries() /* -> std::array<enum_entry_t<E>, N> */
   auto entries = std::array<enum_entry_t<E>, enum_count_v<E>>{};
   enum_meta_for_each<E, Order>([&entries](auto index, auto ec) {
     entries[index].first = [:ec:];
-    entries[index].second = identifier_of(ec.value);
+    entries[index].second =
+      reflect_cpp26::define_static_string(identifier_of(ec.value));
   });
   return entries;
 }

@@ -7,7 +7,7 @@
 /**
  * Constexpr, locale-independent alternative to std::isalnum etc. in <cctype>.
  */
-#define REFLECT_CPP26_CTYPE_FUNCTION_FOR_EACH(F) \
+#define REFLECT_CPP26_CTYPE_PREDICATE_FOR_EACH(F) \
   F(isalnum)  \
   F(isalpha)  \
   F(islower)  \
@@ -116,16 +116,34 @@ constexpr bool ispunct(uint8_t c) {
     && (impl::ctype_flag_table[c] & impl::ctype_punct_mask) != 0;
 }
 
-#define REFLECT_CPP26_DEFINE_CTYPE_FUNCTION_IN_NAMESPACE(func)  \
+constexpr uint8_t tolower(uint8_t c) {
+  return isupper(c) ? c + 'a' - 'A' : c;
+}
+
+constexpr uint8_t toupper(uint8_t c) {
+  return islower(c) ? c + 'A' - 'a' : c;
+}
+
+#define REFLECT_CPP26_DEFINE_CTYPE_PREDICATE_IN_NAMESPACE(func)  \
   template <std::integral T>                                    \
   constexpr bool func(T c) {                                    \
     return c >= 0 && c <= 127 && func(static_cast<uint8_t>(c)); \
   }
 
-REFLECT_CPP26_CTYPE_FUNCTION_FOR_EACH(
-  REFLECT_CPP26_DEFINE_CTYPE_FUNCTION_IN_NAMESPACE)
+REFLECT_CPP26_CTYPE_PREDICATE_FOR_EACH(
+  REFLECT_CPP26_DEFINE_CTYPE_PREDICATE_IN_NAMESPACE)
 
-#undef REFLECT_CPP26_DEFINE_CTYPE_FUNCTION_IN_NAMESPACE
+#undef REFLECT_CPP26_DEFINE_CTYPE_PREDICATE_IN_NAMESPACE
+
+template <std::integral T>
+constexpr auto tolower(T c) -> T {
+  return c >= 0 && c <= 127 ? tolower(static_cast<uint8_t>(c)) : c;
+}
+
+template <std::integral T>
+constexpr auto toupper(T c) -> T {
+  return c >= 0 && c <= 127 ? toupper(static_cast<uint8_t>(c)) : c;
+}
 } // namespace reflect_cpp26
 
 #endif // REFLECT_CPP26_UTILS_CTYPE_HPP

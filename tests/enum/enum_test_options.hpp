@@ -1,6 +1,6 @@
 #pragma once
 
-#include "test_options.hpp"
+#include "tests/test_options.hpp"
 
 #ifdef ENABLE_BINARY_SEARCH_CHECK
 #define REFLECT_CPP26_ENUM_ENABLE_HASH_TABLE_LOOKUP_THRESHOLD 9999

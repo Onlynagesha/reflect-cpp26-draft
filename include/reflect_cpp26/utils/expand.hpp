@@ -39,8 +39,7 @@ template<auto... Vs>
 constexpr auto for_each_replicator = constant<Vs...>{};
 } // namespace impl
 
-template<class Range>
-  requires (std::ranges::input_range<Range>)
+template<std::ranges::input_range Range>
 consteval auto make_for_each_replicator(const Range& range)
 {
   return substitute(

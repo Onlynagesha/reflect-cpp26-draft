@@ -1,5 +1,5 @@
-#include "enum/test_cases.hpp"
-#include "test_options.hpp"
+#include "tests/enum/test_cases.hpp"
+#include "tests/test_options.hpp"
 #include <reflect_cpp26/enum/impl/hash_collision_check.hpp>
 
 using reflect_cpp26::impl::enum_name_has_hash_collision_v;

@@ -1,5 +1,11 @@
-#include "test_options.hpp"
+#include "tests/test_options.hpp"
+
+#ifdef ENABLE_FULL_HEADER_TEST
 #include <reflect_cpp26/annotations.hpp>
+#else
+#include <reflect_cpp26/annotations/macros.h>
+#include <reflect_cpp26/annotations/properties.hpp>
+#endif
 
 #define RFL_PROPERTY(...) REFLECT_CPP26_PROPERTY(__VA_ARGS__)
 

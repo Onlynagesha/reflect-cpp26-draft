@@ -71,14 +71,15 @@ consteval auto reflect_pointer_to_member(Member T::*mptr) -> std::meta::info
   auto target = std::meta::reflect_value(mptr);
   REFLECT_CPP26_EXPAND(all_direct_nsdm_of(^^T)).for_each(
     [&res, target](auto cur) {
-      if (is_reference_type(type_of(cur.value)) || is_bit_field(cur.value)) {
-        return true; // Continues;
+      constexpr auto is_ref = is_reference_type(type_of(cur.value));
+      constexpr auto is_bf = is_bit_field(cur.value);
+      if constexpr (!is_ref && !is_bf) {
+        if (std::meta::reflect_value(&[:cur:]) == target) {
+          res = cur;
+          return false; // Stops for-each loop
+        }
       }
-      if (std::meta::reflect_value(&[:cur:]) == target) {
-        res = cur;
-        return false; // Stops for-each loop
-      }
-      return true; // Continues
+      return true; // Continues;
     });
   if (std::meta::info{} == res) {
     compile_error("Not found.");

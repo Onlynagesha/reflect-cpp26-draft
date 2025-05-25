@@ -44,7 +44,7 @@ constexpr auto enum_switch_void(Func&& func, E value) -> void
 {
   enum_for_each<E>([&func, value](auto e) {
     if (e == value) {
-      std::invoke(func, e);
+      func(e);
       return false; // false: Does not continue
     }
     return true; // true: Continues
@@ -57,7 +57,7 @@ constexpr auto enum_switch_optional(Func&& func, E value) -> std::optional<T>
   auto res = std::optional<T>{};
   enum_for_each<E>([&func, value, &res](auto e) {
     if (e == value) {
-      res = std::invoke(func, e);
+      res = func(e);
       return false; // false: Does not continue
     }
     return true; // true: Continues
@@ -71,7 +71,7 @@ constexpr auto enum_switch_value(Func&& func, E value, T init)
 {
   enum_for_each<E>([&func, value, &init](auto e) {
     if (e == value) {
-      init = std::invoke(func, e);
+      init = func(e);
       return false; // false: Does not continue
     }
     return true; // true: Continues

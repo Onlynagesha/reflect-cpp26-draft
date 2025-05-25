@@ -1,4 +1,4 @@
-#include <test_options.hpp>
+#include "tests/test_options.hpp"
 #include <reflect_cpp26/utils/constant.hpp>
 #include <format>
 
@@ -186,4 +186,38 @@ TEST(UtilsConstant, Lookup)
     std::monostate>();        // Not convertible
   EXPECT_EQ_STATIC(0, tags_misuse.index_of(std::is_integral<long>{}));
   EXPECT_EQ_STATIC(1, tags_misuse.last_index_of(std::is_integral<double>{}));
+}
+
+TEST(UtilsConstant, Predicates)
+{
+  auto c1 = rfl::constant<2u, 3u, 7u>{};
+  auto value = 42u;
+  auto predicate_1 = [&value](auto x) {
+    static_assert(rfl::is_nontype_template_instance_of_v<
+      decltype(x), rfl::constant>);
+    return value % x == 0;
+  };
+  EXPECT_TRUE(c1.all_of(predicate_1));
+  EXPECT_TRUE(c1.any_of(predicate_1));
+  EXPECT_FALSE(c1.none_of(predicate_1));
+
+  value = 26u;
+  auto predicate_2 = [&value](auto index, auto x) {
+    static_assert(rfl::is_nontype_template_instance_of_v<
+      decltype(index), rfl::constant>);
+    return (value + index) % x == 0;
+  };
+  EXPECT_TRUE(c1.all_of(predicate_2));
+  EXPECT_TRUE(c1.any_of(predicate_2));
+  EXPECT_FALSE(c1.none_of(predicate_2));
+
+  value = 28u;
+  EXPECT_FALSE(c1.all_of(predicate_2));
+  EXPECT_TRUE(c1.any_of(predicate_2));
+  EXPECT_FALSE(c1.none_of(predicate_2));
+
+  value = 1u;
+  EXPECT_FALSE(c1.all_of(predicate_2));
+  EXPECT_FALSE(c1.any_of(predicate_2));
+  EXPECT_TRUE(c1.none_of(predicate_2));
 }

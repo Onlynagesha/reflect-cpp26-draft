@@ -31,7 +31,7 @@ struct aggregate_by_direct_memberwise {
     members.reserve(min_member_size);
 
     for (auto i = 0zU; i < min_member_size; i++) {
-      auto cur = std::invoke(Transform{}, public_direct_nsdm_of(^^Ts)[i]...);
+      auto cur = Transform{}(public_direct_nsdm_of(^^Ts)[i]...);
       if (!is_data_member_spec(cur)) {
         compile_error("Transform function result must be data member spec.");
       }
@@ -51,11 +51,9 @@ struct aggregate_by_flattened_memberwise {
   static consteval auto ith_member_getter(size_t i) -> std::meta::info
   {
     if constexpr (invocable_with_spec) {
-      return std::invoke(
-        Transform{}, public_flattened_nsdm_v<Ts>.values[i]...);
+      return Transform{}(public_flattened_nsdm_v<Ts>.values[i]...);
     } else {
-      return std::invoke(
-        Transform{}, public_flattened_nsdm_v<Ts>.values[i].member...);
+      return Transform{}(public_flattened_nsdm_v<Ts>.values[i].member...);
     }
   }
 

@@ -46,7 +46,8 @@ constexpr auto properties_of_meta_v = REFLECT_CPP26_EXPAND(annotations_of(M))
 
 template <std::meta::info M>
 constexpr auto validators_of_meta_v = REFLECT_CPP26_EXPAND(annotations_of(M))
-  .template filter<impl::is_validator_fn>();
+  .template filter<impl::is_validator_fn>()
+  .template map<extract_meta_value>();
 } // namespace reflect_cpp26::annotations
 
 #endif // REFLECT_CPP26_ANNOTATIONS_TAGS_HPP

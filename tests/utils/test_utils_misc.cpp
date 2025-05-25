@@ -1,4 +1,4 @@
-#include "test_options.hpp"
+#include "tests/test_options.hpp"
 #include <reflect_cpp26/utils/ctype.hpp>
 #include <reflect_cpp26/utils/debug_helper.hpp>
 #include <reflect_cpp26/utils/meta_utility.hpp>
@@ -13,7 +13,7 @@ TEST(UtilsMisc, CType)
     EXPECT_EQ(!!std::fn(i), rfl::fn(i))               \
       << std::format("Wrong " #fn "('\\x{:x}')", i);
 
-    REFLECT_CPP26_CTYPE_FUNCTION_FOR_EACH(MAKE_EXPECT_EQ)
+    REFLECT_CPP26_CTYPE_PREDICATE_FOR_EACH(MAKE_EXPECT_EQ)
 #undef MAKE_EXPECT_EQ
   }
 
@@ -24,7 +24,7 @@ TEST(UtilsMisc, CType)
 #define TEST_OVERFLOW(type, expr)                             \
   do {                                                        \
     auto value = static_cast<type>(expr);                     \
-    REFLECT_CPP26_CTYPE_FUNCTION_FOR_EACH(MAKE_EXPECT_FALSE); \
+    REFLECT_CPP26_CTYPE_PREDICATE_FOR_EACH(MAKE_EXPECT_FALSE); \
   } while (false)
 
   TEST_OVERFLOW(int, -128);

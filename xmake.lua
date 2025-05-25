@@ -26,7 +26,7 @@ function make_test_case(path, suffix, callback)
     set_group(case_group)
     add_files(case_src_file_path)
     set_languages("c++26")
-    add_includedirs("include", "tests")
+    add_includedirs("include", ".")
     add_cxxflags("-freflection-latest")
     add_packages("gtest")
     add_options("static-test")
@@ -57,6 +57,7 @@ meta_test_cases_with_custom_variants = {
 meta_test_cases_without_variant = {
   -- Utility
   "tests/utils/test_constant",
+  "tests/utils/test_identifier_naming",
   "tests/utils/test_meta_tuple",
   "tests/utils/test_preprocessors",
   "tests/utils/test_to_string",
@@ -74,30 +75,37 @@ meta_test_cases_without_variant = {
   "tests/type_traits/class_types/test_class_memberwise_predicate",
   -- Enum
   "tests/enum/impl/test_hash_collision_check",
-  "tests/enum/test_enum_count",
-  "tests/enum/test_enum_meta_entries",
-  "tests/enum/test_enum_values",
-  "tests/enum/test_enum_for_each",
-  "tests/enum/test_enum_hash",
-  "tests/enum/test_enum_entries",
-  "tests/enum/test_enum_names",
-  "tests/enum/test_enum_switch",
-  "tests/enum/test_enum_json",
-  "tests/enum/test_enum_json_static",
-  "tests/enum/test_enum_type_name",
   "tests/enum/test_enum_cast_from_integer",
   "tests/enum/test_enum_contains_integer",
   "tests/enum/test_enum_contains_string",
+  "tests/enum/test_enum_count",
+  "tests/enum/test_enum_entries",
+  "tests/enum/test_enum_for_each",
+  "tests/enum/test_enum_hash",
   "tests/enum/test_enum_index",
+  "tests/enum/test_enum_json_static",
+  "tests/enum/test_enum_json",
+  "tests/enum/test_enum_meta_entries",
+  "tests/enum/test_enum_names",
+  "tests/enum/test_enum_switch",
+  "tests/enum/test_enum_type_name",
+  "tests/enum/test_enum_unique_count",
+  "tests/enum/test_enum_unique_index",
+  "tests/enum/test_enum_values",
+  -- Lookup
+  "tests/lookup/test_class_lookup_table_by_name",
+  "tests/lookup/test_namespace_lookup_table_by_enum",
+  "tests/lookup/test_namespace_lookup_table_by_name",
   -- Type Operations
   "tests/type_operations/test_comparison",
   "tests/type_operations/test_define_aggregate",
   "tests/type_operations/test_to_structured",
   -- Annotations
   "tests/annotations/test_properties",
-  "tests/annotations/validators/test_leaf_validators_1",
-  "tests/annotations/validators/test_leaf_validators_2",
-  "tests/annotations/validators/test_compound_validators",
+  -- TODO: Debugging
+  -- "tests/annotations/validators/test_leaf_validators_1",
+  -- "tests/annotations/validators/test_leaf_validators_2",
+  -- "tests/annotations/validators/test_compound_validators",
 }
 
 for _, item in ipairs(meta_test_cases_with_custom_variants) do

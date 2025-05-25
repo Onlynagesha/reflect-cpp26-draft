@@ -1,7 +1,7 @@
 #ifndef REFLECT_CPP26_ENUM_IMPL_ENUM_ENTRY_HPP
 #define REFLECT_CPP26_ENUM_IMPL_ENUM_ENTRY_HPP
 
-#include <reflect_cpp26/enum/enum_for_each.hpp>
+#include <reflect_cpp26/enum/enum_entries.hpp>
 #include <reflect_cpp26/utils/define_static_values.hpp>
 #include <reflect_cpp26/utils/string_hash.hpp>
 #include <reflect_cpp26/utils/utility.hpp>
@@ -65,6 +65,7 @@ struct alignas(32) enum_value_entry : enum_entry_interface<enum_value_entry> {
   meta_string_view name;
   uint16_t index_original_order;
   uint16_t index_sorted_by_value;
+  uint16_t index_sorted_by_value_unique;
   uint16_t index_sorted_by_name;
 
   template <enum_entry_order Order>
@@ -114,15 +115,14 @@ consteval auto make_enum_value_entry_list() -> std::vector<enum_value_entry>
     "Enum types with more than 65535 entries are not supported.");
 
   auto entry_list = std::vector<enum_value_entry>{};
-  enum_meta_for_each<E>([&entry_list](auto index, auto ec) {
-    auto value = enum_value_entry::make_value([:ec:]);
-    auto name = meta_string_view::from_std_string_view(identifier_of(ec.value));
+  auto cur_index = uint16_t{0};
+  for (auto [e, str]: enum_entries<E>()) {
     entry_list.push_back({
-      .value = value,
-      .name = name,
-      .index_original_order = static_cast<uint16_t>(index),
+      .value = enum_value_entry::make_value(e),
+      .name = meta_string_view::from_std_string_view(str),
+      .index_original_order = cur_index++,
     });
-  });
+  }
   std::ranges::sort(entry_list, {}, &enum_value_entry::name);
   for (auto i = 0zU, n = entry_list.size(); i < n; i++) {
     entry_list[i].index_sorted_by_name = static_cast<uint16_t>(i);
@@ -137,6 +137,9 @@ consteval auto make_enum_value_entry_list() -> std::vector<enum_value_entry>
   }
   auto [s, t] = std::ranges::unique(entry_list, {}, &enum_value_entry::value);
   entry_list.erase(s, t);
+  for (auto i = 0zU, n = entry_list.size(); i < n; i++) {
+    entry_list[i].index_sorted_by_value_unique = static_cast<uint16_t>(i);
+  }
   return entry_list;
 }
 
@@ -144,14 +147,14 @@ template <class E>
 consteval auto make_enum_hash_entry_list() -> std::vector<enum_hash_entry>
 {
   auto entry_list = std::vector<enum_hash_entry>{};
-  enum_meta_for_each<E>([&entry_list](auto ec) {
-    auto name = meta_string_view::from_std_string_view(identifier_of(ec.value));
+  for (auto [e, str]: enum_entries<E>()) {
+    auto name = meta_string_view::from_std_string_view(str);
     entry_list.push_back({
-      .name_hash = bkdr_hash64(name),
-      .value = enum_hash_entry::make_value([:ec:]),
+      .name_hash = bkdr_hash64(str),
+      .value = enum_hash_entry::make_value(e),
       .name = name,
     });
-  });
+  }
   std::ranges::sort(entry_list, &enum_hash_entry::less_by_hash_strong_order);
   return entry_list;
 }
@@ -228,8 +231,8 @@ constexpr auto enum_value_entry_table_entries_v =
   reflect_cpp26::define_static_array(make_enum_value_entry_list<E>());
 
 template <class E>
-constexpr auto enum_value_entry_table_v = enum_value_entry_table::make(
-  enum_value_entry_table_entries_v<E>);
+constexpr auto enum_value_entry_table_v =
+  enum_value_entry_table::make(enum_value_entry_table_entries_v<E>);
 } // namespace reflect_cpp26::impl
 
 #endif // REFLECT_CPP26_ENUM_IMPL_ENUM_ENTRY_HPP

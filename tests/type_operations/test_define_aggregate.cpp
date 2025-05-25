@@ -1,9 +1,14 @@
-#include <gtest/gtest.h>
-#include <reflect_cpp26/type_operations.hpp>
+#include "tests/test_options.hpp"
 #include <reflect_cpp26/type_traits/class_types/member_traits.hpp>
 #include <deque>
 #include <limits>
 #include <list>
+
+#ifdef ENABLE_FULL_HEADER_TEST
+#include <reflect_cpp26/type_operations.hpp>
+#else
+#include <reflect_cpp26/type_operations/define_aggregate.hpp>
+#endif
 
 namespace rfl = reflect_cpp26;
 

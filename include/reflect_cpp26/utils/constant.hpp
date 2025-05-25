@@ -44,14 +44,14 @@ private:
       is_invocable_exactly_r_v<void, Func, Derived<V>> * 1;
   
     if constexpr (dispatch_key == 0b10'00) {
-      return std::invoke(body, Derived<I>{}, Derived<V>{});
+      return body(Derived<I>{}, Derived<V>{});
     } else if constexpr (dispatch_key == 0b01'00) {
-      std::invoke(body, Derived<I>{}, Derived<V>{});
+      body(Derived<I>{}, Derived<V>{});
       return true;
     } else if constexpr (dispatch_key == 0b00'10) {
-      return std::invoke(body, Derived<V>{});
+      return body(Derived<V>{});
     } else if constexpr (dispatch_key == 0b00'01) {
-      std::invoke(body, Derived<V>{});
+      body(Derived<V>{});
       return true;
     } else {
       static_assert(false, "Invalid or ambiguous call signature.");
@@ -76,7 +76,7 @@ private:
       return Derived<>();
     } else {
       constexpr auto cur = Derived<Vs...[I]>{};
-      if constexpr (std::invoke(Func, cur)) {
+      if constexpr (Func(cur)) {
         return Derived<Vs...[I]>::concat(filter_impl<I + 1, Func>());
       } else {
         return filter_impl<I + 1, Func>();
@@ -90,8 +90,7 @@ private:
     if constexpr (I >= sizeof...(Vs)) {
       return Prev;
     } else {
-      constexpr auto Next = std::invoke(
-        Func, Derived<Prev>{}, Derived<Vs...[I]>{});
+      constexpr auto Next = Func(Derived<Prev>{}, Derived<Vs...[I]>{});
       static_assert(
         !is_nontype_template_instance_of_v<decltype(Next), Derived>,
         "Result of func shall not be constant<x>. Return x instead.");
@@ -105,7 +104,7 @@ private:
     if constexpr (I >= sizeof...(Vs)) {
       return prev;
     } else {
-      auto next = std::invoke(body, prev, Derived<Vs...[I]>{});
+      auto next = body(prev, Derived<Vs...[I]>{});
       return reduce_impl<I + 1>(body, next);
     }
   }
@@ -156,7 +155,7 @@ public:
    */
   template <auto Func>
   static constexpr auto map() /* -> constant<mapped_Vs...> */ {
-    return Derived<std::invoke(Func, Derived<Vs>{})...>{};
+    return Derived<Func(Derived<Vs>{})...>{};
   }
 
   /**
@@ -169,8 +168,7 @@ public:
   {
     using ResultT = std::common_type_t<
       std::invoke_result_t<Func, Derived<Vs>>...>;
-    return std::array<ResultT, sizeof...(Vs)>{
-      std::invoke(body, Derived<Vs>{})...};
+    return std::array<ResultT, sizeof...(Vs)>{body(Derived<Vs>{})...};
   }
 
   /**
@@ -194,7 +192,7 @@ public:
     res.reserve(sizeof...(Vs));
 
     for_each([&predicate, &res](auto V) {
-      if (std::invoke(predicate, V)) {
+      if (predicate(V)) {
         res.emplace_back(V.value);
       }
     });
@@ -293,8 +291,14 @@ public:
   static constexpr auto all_of(Func&& predicate) -> bool
   {
     auto res = true;
-    for_each([&predicate, &res](auto V) {
-      return res &= std::invoke(predicate, V);
+    for_each([&predicate, &res](auto I, auto V) {
+      if constexpr (requires { predicate(I, V); }) {
+        return res &= predicate(I, V);
+      } else if constexpr (requires { predicate(V); }) {
+        return res &= predicate(V);
+      } else {
+        static_assert(false, "Invalid predicate signature.");
+      }
     });
     return res;
   }
@@ -306,8 +310,14 @@ public:
   static constexpr auto any_of(Func&& predicate) -> bool
   {
     auto res = false;
-    for_each([&predicate, &res](auto V) {
-      res |= std::invoke(predicate, V);
+    for_each([&predicate, &res](auto I, auto V) {
+      if constexpr (requires { predicate(I, V); }) {
+        res |= predicate(I, V);
+      } else if constexpr (requires { predicate(V); }) {
+        res |= predicate(V);
+      } else {
+        static_assert(false, "Invalid predicate signature.");
+      }
       return !res; // Stops if res == true
     });
     return res;

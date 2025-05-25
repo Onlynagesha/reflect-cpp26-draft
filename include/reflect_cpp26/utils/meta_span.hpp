@@ -48,6 +48,14 @@ struct meta_span {
     return res;
   }
 
+  static consteval auto from_std_span(std::span<const T> span) -> meta_span
+  {
+    auto res = meta_span{};
+    res.head = span.data();
+    res.tail = span.data() + span.size();
+    return res;
+  }
+
   constexpr operator std::span<const T>() const {
     return {head, tail};
   }

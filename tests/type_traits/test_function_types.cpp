@@ -1,6 +1,11 @@
-#include "test_options.hpp"
-#include <reflect_cpp26/type_traits.hpp>
+#include "tests/test_options.hpp"
 #include <cstdio>
+
+#ifdef ENABLE_FULL_HEADER_TEST
+#include <reflect_cpp26/type_traits.hpp>
+#else
+#include <reflect_cpp26/type_traits/function_types.hpp>
+#endif
 
 namespace rfl = reflect_cpp26;
 

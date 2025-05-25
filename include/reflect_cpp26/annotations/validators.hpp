@@ -24,7 +24,7 @@ concept validator_maker = std::derived_from<T, validator_maker_tag_t>;
 template <class Derived>
 struct validator_no_bind : validator_tag_t, validator_maker_tag_t {
   // Dummy maker
-  static consteval auto operator()() {
+  static constexpr auto operator()() {
     return Derived{};
   }
 };
@@ -391,7 +391,7 @@ struct custom_validator_t : validator_tag_t {
     requires (std::is_invocable_r_v<bool, Func, InputT>)
   constexpr bool test(const InputT& input) const
   {
-    return std::invoke(func, input);
+    return func(input);
   }
 
   template <class InputT>
@@ -760,82 +760,6 @@ constexpr auto any_of =
 constexpr auto none_of =
   compound_validator_node_t<none_of_validator_t>{};
 
-namespace impl {
-template <class ValidatorT, class InputT>
-constexpr void check_validator_is_invocable(
-  const ValidatorT& validator, const InputT& input)
-{
-  // Note: error message is not evaluated if assertion condition is true.
-  static_assert(requires { validator.test(input); },
-    std::string{"Can not invoke testing function with:"}
-      + "\n  validator type: " + type_description_of<ValidatorT>()
-      + "\n  input type: " + type_description_of<InputT>());
-}
-
-template <auto Members, class T>
-constexpr bool validate_members(const T& obj, std::string* error_output)
-{
-  auto res = true;
-  Members.for_each([&res, &obj, error_output](auto m) {
-    const auto& cur_value = obj.[:m:];
-
-    constexpr auto validators = validators_of_meta_v<m>;
-    validators.for_each([&res, &cur_value, error_output, m](auto a) {
-      constexpr auto cur_annotation = extract(a);
-      check_validator_is_invocable(cur_annotation, cur_value);
-
-      res &= cur_annotation.test(cur_value);
-    if (!res && error_output != nullptr) {
-      *error_output += "Invalid member '";
-        *error_output += identifier_of(m.value);
-      *error_output += "': ";
-        *error_output += cur_annotation.make_error_message(cur_value);
-    }
-      return res; // Stops on single violation
-    });
-    return res; // Stops on single violation
-  });
-  return res;
-}
-
-template <auto Members, class T>
-constexpr bool validate_members_full(const T& obj, std::string* error_output)
-{
-  if (error_output == nullptr) {
-    return validate_members<Members>(obj, nullptr);
-  }
-  auto res = true;
-  Members.for_each([&res, &obj, error_output](auto m) {
-    const auto& cur_value = obj.[:m:];
-    auto res_cur_value = true;
-
-    constexpr auto validators = validators_of_meta_v<m>;
-    validators.for_each([&res_cur_value, &cur_value, error_output, m](auto a) {
-      constexpr auto cur_annotation = extract(a);
-      check_validator_is_invocable(cur_annotation, cur_value);
-
-      auto cur_res = cur_annotation.test(cur_value);
-      if (!cur_res) {
-        if (res_cur_value) {
-          *error_output += "Invalid member '";
-          *error_output += std::meta::identifier_of(m);
-          *error_output += "':\n";
-        }
-        *error_output += "* ";
-        *error_output += cur_annotation.make_error_message(cur_value);
-        *error_output += '\n';
-      }
-      res_cur_value &= cur_res;
-    });
-    res &= res_cur_value;
-  });
-  if (!res) {
-    error_output->pop_back(); // Removes the trailing '\n'
-  }
-  return res;
-}
-} // namespace impl
-
 /**
  * Validates all flattened public non-static data members of obj
  * with annotated validators of each member.
@@ -847,7 +771,22 @@ constexpr bool validate_members(
   const T& obj, std::string* error_output = nullptr)
 {
   constexpr auto members = public_flattened_nsdm_v<T>.to_members();
-  return impl::validate_members<members>(obj, error_output);
+  return members.all_of([&obj, error_output](auto m) {
+    constexpr auto validators = validators_of_meta_v<m>;
+
+    return validators.all_of([&obj, error_output, m](auto v) {
+      constexpr auto cur_validator = v.value;
+
+      auto res = cur_validator.test(obj.[:m:]);
+      if (!res && error_output != nullptr) {
+        *error_output += "Invalid member '";
+        *error_output += identifier_of(m.value);
+        *error_output += "': ";
+        *error_output += cur_validator.make_error_message(obj.[:m:]);
+      }
+      return res;
+    });
+  });
 }
 
 /**
@@ -860,8 +799,36 @@ constexpr bool validate_members(
 template <partially_flattenable_class T>
 constexpr bool validate_members_full(const T& obj, std::string* error_output)
 {
+  if (error_output == nullptr) {
+    return validate_members(obj, nullptr);
+  }
   constexpr auto members = public_flattened_nsdm_v<T>.to_members();
-  return impl::validate_members_full<members>(obj, error_output);
+  auto res = true;
+  members.for_each([&res, &obj, error_output](auto m) {
+    auto res_cur_value = true;
+
+    constexpr auto validators = validators_of_meta_v<m>;
+    validators.for_each([&res_cur_value, &obj, error_output, m](auto v) {
+      constexpr auto cur_validator = v.value;
+      auto cur_res = cur_validator.test(obj.[:m:]);
+      if (!cur_res) {
+        if (res_cur_value) {
+          *error_output += "Invalid member '";
+          *error_output += std::meta::identifier_of(m);
+          *error_output += "':\n";
+        }
+        *error_output += "* ";
+        *error_output += cur_validator.make_error_message(obj.[:m:]);
+        *error_output += '\n';
+      }
+      res_cur_value &= cur_res;
+    });
+    res &= res_cur_value;
+  });
+  if (!res) {
+    error_output->pop_back(); // Removes the trailing '\n'
+  }
+  return res;
 }
 } // namespace reflect_cpp26::annotations
 

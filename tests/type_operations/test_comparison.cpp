@@ -1,10 +1,15 @@
-#include <gtest/gtest.h>
-#include <reflect_cpp26/type_operations.hpp>
+#include "tests/test_options.hpp"
 #include <cstdio>
 #include <deque>
 #include <limits>
 #include <list>
 #include <set>
+
+#ifdef ENABLE_FULL_HEADER_TEST
+#include <reflect_cpp26/type_operations.hpp>
+#else
+#include <reflect_cpp26/type_operations/comparison.hpp>
+#endif
 
 namespace rfl = reflect_cpp26;
 
@@ -396,7 +401,7 @@ TEST(TypeOperationsComparison, Arrays) {
 
   // Hint: Be careful with decaying cases in practice.
   auto with_decay = [](auto comp, auto lhs, auto rhs) {
-    return std::invoke(comp, lhs, rhs);
+    return comp(lhs, rhs);
   };
   EXPECT_FALSE(with_decay(rfl::generic_equal, str1, str2));
   EXPECT_TRUE(with_decay(rfl::generic_not_equal, str1, str2));

@@ -1,4 +1,4 @@
-#include <gtest/gtest.h>
+#include "tests/test_options.hpp"
 #include <reflect_cpp26/utils/meta_tuple.hpp>
 
 namespace rfl = reflect_cpp26;

@@ -1,8 +1,13 @@
-#include <gtest/gtest.h>
-#include <reflect_cpp26/type_operations.hpp>
+#include "tests/test_options.hpp"
 #include <reflect_cpp26/utils/to_string.hpp>
 #include <cstdio>
 #include <numeric>
+
+#ifdef ENABLE_FULL_HEADER_TEST
+#include <reflect_cpp26/type_operations.hpp>
+#else
+#include <reflect_cpp26/type_operations/to_structured.hpp>
+#endif
 
 namespace rfl = reflect_cpp26;
 

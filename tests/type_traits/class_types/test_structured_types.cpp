@@ -1,10 +1,15 @@
-#include "test_options.hpp"
-#include <reflect_cpp26/type_traits.hpp>
+#include "tests/test_options.hpp"
 #include <reflect_cpp26/utils/meta_span.hpp>
 #include <reflect_cpp26/utils/meta_string_view.hpp>
 #include <reflect_cpp26/utils/meta_tuple.hpp>
 #include <cstdio>
 #include <system_error>
+
+#ifdef ENABLE_FULL_HEADER_TEST
+#include <reflect_cpp26/type_traits.hpp>
+#else
+#include <reflect_cpp26/type_traits/class_types/structured.hpp>
+#endif
 
 namespace rfl = reflect_cpp26;
 
